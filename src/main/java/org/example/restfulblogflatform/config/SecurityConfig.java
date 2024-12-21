@@ -28,7 +28,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable()) // CSRF 비활성화
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/login", "api/signup").permitAll() // 로그인 엔드포인트 인증 불필요
+                        .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인 엔드포인트 인증 불필요
                         .anyRequest().authenticated() // 나머지 요청은 인증 필요
                 )
                 .sessionManagement(session -> session
