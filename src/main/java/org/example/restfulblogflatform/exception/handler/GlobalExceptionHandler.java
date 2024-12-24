@@ -11,6 +11,7 @@ import org.example.restfulblogflatform.log.service.LogService;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -25,6 +26,22 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
     private final LogService logService;
+
+    // AuthenticationException 처리
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
+        String errorMessage = String.format("Authentication failed: %s", ex.getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED)
+                .message("인증에 실패했습니다.")
+                .data(null)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
 
     // @Valid에서 예외가 발생했을 경우
     @ExceptionHandler(MethodArgumentNotValidException.class)

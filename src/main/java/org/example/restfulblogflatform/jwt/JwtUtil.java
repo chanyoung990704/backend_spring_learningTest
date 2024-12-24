@@ -3,22 +3,23 @@ package org.example.restfulblogflatform.jwt;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
+import java.security.Key;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "mysecretkey"; // 대칭 키 (프로덕션에서는 환경 변수로 관리)
-
+    private final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     // 토큰 생성
     public String generateToken(String username) {
         return Jwts.builder()
-                .setSubject(username) // 사용자 이름 설정
-                .setIssuedAt(new Date()) // 발행 시간
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 만료 시간: 10시간
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY) // 서명 알고리즘과 키 설정
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .signWith(SECRET_KEY, SignatureAlgorithm.HS256) // Key 객체와 알고리즘 분리
                 .compact();
     }
 
@@ -29,8 +30,9 @@ public class JwtUtil {
 
     // 토큰에서 모든 클레임 추출
     private Claims extractClaims(String token) {
-        return Jwts.parser()
+        return Jwts.parserBuilder()
                 .setSigningKey(SECRET_KEY)
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }

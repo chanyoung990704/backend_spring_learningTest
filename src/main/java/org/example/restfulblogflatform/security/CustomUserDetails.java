@@ -15,6 +15,10 @@ public class CustomUserDetails implements UserDetails {
         this.user = user;
     }
 
+    public String getName(){
+        return user.getUsername();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.emptyList(); // 권한 없음
