@@ -17,9 +17,9 @@ public class LogEntry extends BaseEntity {
     @Column(nullable = false)
     private String level; // 로그 레벨 (e.g., INFO, ERROR)
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message; // 로그 메시지
 
-    @Column(nullable = true)
+    @Column(nullable = true, columnDefinition = "TEXT")
     private String exception; // 예외 메시지 (옵션)
 }

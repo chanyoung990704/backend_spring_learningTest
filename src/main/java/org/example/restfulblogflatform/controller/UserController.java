@@ -3,7 +3,7 @@ package org.example.restfulblogflatform.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.dto.user.request.UserSignUpRequestDto;
-import org.example.restfulblogflatform.service.UserService;
+import org.example.restfulblogflatform.service.user.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +19,7 @@ public class UserController {
 
     @PostMapping("/signup")
     public ResponseEntity<Long> signUp(@RequestBody @Valid UserSignUpRequestDto request) {
-        Long id = userService.signUp(request);
+        Long id = userService.create(request);
         return ResponseEntity.ok(id);
     }
 

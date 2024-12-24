@@ -3,8 +3,9 @@ package org.example.restfulblogflatform.dto.user.request;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import lombok.Getter;
-import lombok.Value;
+import lombok.*;
+import org.example.restfulblogflatform.entity.User;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.Serializable;
 
@@ -13,6 +14,9 @@ import java.io.Serializable;
  */
 @Value
 @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED, force = true)
+@AllArgsConstructor
+@Builder
 public class UserSignUpRequestDto implements Serializable {
     @NotBlank(message = "이메일은 필수 입력값입니다.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
@@ -25,4 +29,13 @@ public class UserSignUpRequestDto implements Serializable {
 
     @NotBlank(message = "이름은 필수 입력값입니다.")
     private String username;
+
+
+    public User toEntity(PasswordEncoder passwordEncoder) {
+        return User.builder()
+                .username(this.username)
+                .password(passwordEncoder.encode(this.password))
+                .email(this.email)
+                .build();
+    }
 }

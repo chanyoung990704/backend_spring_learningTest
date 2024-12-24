@@ -24,24 +24,15 @@ public class ServiceAspect {
             Object result = joinPoint.proceed();
             long executionTime = System.currentTimeMillis() - startTime;
 
-            String message = String.format("Method %s executed in %d ms",
+            // 성공 로깅만 수행
+            String successMessage = String.format("Method %s executed in %d ms",
                     joinPoint.getSignature(), executionTime);
-            log.info(message);
-
-            // 성공 로그 저장
-            logService.saveLog("INFO", message, null);
+            log.info(successMessage);
+            logService.saveLog("INFO", successMessage, null);
 
             return result;
         } catch (Exception ex) {
-            long executionTime = System.currentTimeMillis() - startTime;
-
-            String errorMessage = String.format("Exception in method %s after %d ms: %s",
-                    joinPoint.getSignature(), executionTime, ex.getMessage());
-            log.error(errorMessage);
-
-            // 실패 로그 저장
-            logService.saveLog("ERROR", errorMessage, ex.getMessage());
-
+            // 예외는 로깅하지 않고 그대로 전파
             throw ex;
         }
     }

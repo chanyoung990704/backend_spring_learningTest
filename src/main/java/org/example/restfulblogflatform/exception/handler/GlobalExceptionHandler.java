@@ -3,7 +3,11 @@ package org.example.restfulblogflatform.exception.handler;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.restfulblogflatform.exception.response.ErrorResponse;
+import org.example.restfulblogflatform.exception.user.UserException;
+import org.example.restfulblogflatform.log.service.LogService;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +20,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RestControllerAdvice
+@Slf4j
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final LogService logService;
 
     // @Valid에서 예외가 발생했을 경우
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse<List<ValidationError>>> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex) {
+
+        String errorMessage = String.format("입력값 유효 검증 실패 %s", ex.getMessage());
+        saveLog(ex, errorMessage);
 
         List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
         List<ValidationError> validationErrors = fieldErrors.stream()
@@ -44,6 +55,8 @@ public class GlobalExceptionHandler {
     // 데이터 엑세스 관련 예외 처리
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException ex) {
+        String errorMessage = String.format("DataSoruce operation failed: %s", ex.getMessage());
+        saveLog(ex, errorMessage);
         ErrorResponse<Object> errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .message(ex.getMessage())
@@ -51,6 +64,27 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.internalServerError().body(errorResponse);
+    }
+
+    // User Service에서 발생한 예외들
+    @ExceptionHandler(UserException.class)
+    public ResponseEntity<ErrorResponse> handleUserException(UserException ex) {
+        String errorMessage = String.format("User operation failed: %s", ex.getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(ex.getMessage())
+                .data(ex.getErrorCode().name())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    private void saveLog(Exception ex, String errorMessage) {
+        log.error(errorMessage);
+        logService.saveLog("ERROR", errorMessage, ex.getMessage());
     }
 
     @Getter

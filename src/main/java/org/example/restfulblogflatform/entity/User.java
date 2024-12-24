@@ -1,15 +1,13 @@
 package org.example.restfulblogflatform.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 @Table(name = "users")
 public class User extends BaseEntity {
 
@@ -26,11 +24,12 @@ public class User extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Builder
-    private User(String username, String password, String email) {
-        this.username = username;
-        this.password = password;
-        this.email = email;
-    }
-
+    // 업데이트용 메서드
+//    public User update(UpdateUserDto dto) {
+//        if(dto.getUsername() != null) this.username = dto.getUsername();
+//        if(dto.getPassword() != null) this.password = dto.getPassword();
+//        if(dto.getEmail() != null) this.email = dto.getEmail();
+//        return this;
+//    }
 }
+
