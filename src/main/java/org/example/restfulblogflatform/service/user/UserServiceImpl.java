@@ -31,12 +31,12 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
-    public User read(Long userId) {
+    public User get(Long userId) {
         return validator.getUserOrThrow(userId);
     }
 
     @Override
-    public List<User> readAll() {
+    public List<User> getAll() {
         return userRepository.findAll();
     }
 

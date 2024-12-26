@@ -9,9 +9,9 @@ public interface UserService {
 
     Long create(UserSignUpRequestDto request); // Create
 
-    User read(Long userId); // Read (단일 조회)
+    User get(Long userId); // Read (단일 조회)
 
-    List<User> readAll(); // Read (전체 조회)
+    List<User> getAll(); // Read (전체 조회)
 
     void delete(Long userId); // Delete
 
