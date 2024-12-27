@@ -62,7 +62,7 @@ class UserServiceTest {
         doNothing().when(validator).validateEmailNotDuplicate(requestDto.getEmail());
 
         // when
-        Long userId = userService.create(requestDto);
+        Long userId = userService.add(requestDto);
 
         // then
         assertEquals(1L, userId);

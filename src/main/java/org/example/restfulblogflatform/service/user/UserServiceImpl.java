@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
      */
     @Transactional // 데이터 변경이 발생하므로 별도로 읽기 전용 트랜잭션 해제
     @Override
-    public Long create(UserSignUpRequestDto request) {
+    public Long add(UserSignUpRequestDto request) {
         // 이메일 중복 여부 검증
         validator.validateEmailNotDuplicate(request.getEmail());
 

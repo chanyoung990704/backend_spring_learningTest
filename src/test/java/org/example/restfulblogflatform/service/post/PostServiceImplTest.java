@@ -41,7 +41,7 @@ class PostServiceTest {
      */
     @Test
     @DisplayName("게시글 생성 성공 테스트")
-    void createPostSuccess() {
+    void addSuccess() {
         // given
         Long userId = 1L;
         PostRequest postRequest = new PostRequest("Test Title", "Test Content");
@@ -53,7 +53,7 @@ class PostServiceTest {
         given(postRepository.save(any(Post.class))).willReturn(mockPost);
 
         // when
-        PostResponse response = postService.createPost(postRequest, userId);
+        PostResponse response = postService.add(postRequest, userId);
 
         // then
         assertNotNull(response);
@@ -68,7 +68,7 @@ class PostServiceTest {
      */
     @Test
     @DisplayName("게시글 단일 조회 성공 테스트")
-    void getPostSuccess() {
+    void getSuccess() {
         // given
         Long postId = 1L;
         User mockUser = User.createUser("testUser", "password", "test@example.com");
@@ -78,7 +78,7 @@ class PostServiceTest {
         given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
 
         // when
-        Post result = postService.getPost(postId);
+        Post result = postService.get(postId);
 
         // then
         assertNotNull(result);
@@ -91,7 +91,7 @@ class PostServiceTest {
      */
     @Test
     @DisplayName("모든 게시글 조회 성공 테스트")
-    void getAllPostsSuccess() {
+    void getAllSuccess() {
         // given
         User mockUser1 = User.createUser("user1", "password1", "user1@example.com");
         User mockUser2 = User.createUser("user2", "password2", "user2@example.com");
@@ -105,7 +105,7 @@ class PostServiceTest {
         given(postRepository.findAll()).willReturn(mockPosts);
 
         // when
-        List<Post> results = postService.getAllPosts();
+        List<Post> results = postService.getAll();
 
         // then
         assertNotNull(results);
@@ -118,7 +118,7 @@ class PostServiceTest {
      */
     @Test
     @DisplayName("게시글 업데이트 성공 테스트")
-    void updatePostSuccess() {
+    void updateSuccess() {
         // given
         Long postId = 1L;
         String updatedTitle = "Updated Title";
@@ -131,7 +131,7 @@ class PostServiceTest {
         given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
 
         // when
-        PostResponse response = postService.updatePost(postId, updatedTitle, updatedContent);
+        PostResponse response = postService.update(postId, updatedTitle, updatedContent);
 
         // then
         assertNotNull(response);
@@ -146,7 +146,7 @@ class PostServiceTest {
      */
     @Test
     @DisplayName("게시글 삭제 성공 테스트")
-    void deletePostSuccess() {
+    void deleteSuccess() {
         // given
         Long postId = 1L;
 
@@ -157,7 +157,7 @@ class PostServiceTest {
         given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
 
         // when
-        postService.deletePost(postId);
+        postService.delete(postId);
 
         // then
         verify(postValidator).getPostOrThrow(postId);

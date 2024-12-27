@@ -22,14 +22,23 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@RestControllerAdvice
-@Slf4j
-@RequiredArgsConstructor
+/**
+ * 전역 예외를 처리하기 위한 컨트롤러 어드바이스 클래스.
+ * 애플리케이션에서 발생하는 다양한 예외를 처리하고, 적절한 HTTP 응답을 반환합니다.
+ */
+@RestControllerAdvice // 모든 컨트롤러에서 발생하는 예외를 처리하기 위한 어드바이스 클래스
+@Slf4j // Lombok 어노테이션: 로깅 기능 제공
+@RequiredArgsConstructor // final 필드에 대해 생성자를 자동으로 생성
 public class GlobalExceptionHandler {
 
-    private final LogService logService;
+    private final LogService logService; // 로그를 저장하는 서비스
 
-    // AuthenticationException 처리
+    /**
+     * 인증(Authentication) 관련 예외 처리.
+     *
+     * @param ex AuthenticationException 객체
+     * @return HTTP 401 Unauthorized 응답
+     */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponse> handleAuthenticationException(AuthenticationException ex) {
         String errorMessage = String.format("Authentication failed: %s", ex.getMessage());
@@ -45,7 +54,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
-    // @Valid에서 예외가 발생했을 경우
+    /**
+     * 입력값 유효성 검증 실패 예외 처리.
+     *
+     * @param ex MethodArgumentNotValidException 객체
+     * @return HTTP 400 Bad Request 응답
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse<List<ValidationError>>> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex) {
@@ -71,7 +85,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    // 데이터 엑세스 관련 예외 처리
+    /**
+     * 데이터 액세스(DataAccess) 관련 예외 처리.
+     *
+     * @param ex DataAccessException 객체
+     * @return HTTP 500 Internal Server Error 응답
+     */
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException ex) {
         String errorMessage = String.format("DataSource operation failed: %s", ex.getMessage());
@@ -86,13 +105,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.internalServerError().body(errorResponse);
     }
 
-    // User Service에서 발생한 예외들
+    /**
+     * 사용자(User) 관련 예외 처리.
+     *
+     * @param ex UserException 객체
+     * @return HTTP 400 Bad Request 응답
+     */
     @ExceptionHandler(UserException.class)
     public ResponseEntity<ErrorResponse> handleUserException(UserException ex) {
         String errorMessage = String.format("User operation failed: %s", ex.getMessage());
         saveLog(ex, errorMessage);
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.BAD_REQUEST)
                 .message(ex.getMessage())
                 .data(ex.getErrorCode().name())
@@ -102,7 +126,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    // Post 관련 예외 처리
+    /**
+     * 게시글(Post) 관련 예외 처리.
+     *
+     * @param ex PostException 객체
+     * @return HTTP 400 Bad Request 응답
+     */
     @ExceptionHandler(PostException.class)
     public ResponseEntity<ErrorResponse> handlePostException(PostException ex) {
         String errorMessage = String.format("Post operation failed: %s", ex.getErrorCode().getMessage());
@@ -118,7 +147,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    // Comment 관련 예외 처리
+    /**
+     * 댓글(Comment) 관련 예외 처리.
+     *
+     * @param ex CommentException 객체
+     * @return HTTP 400 Bad Request 응답
+     */
     @ExceptionHandler(CommentException.class)
     public ResponseEntity<ErrorResponse> handleCommentException(CommentException ex) {
         String errorMessage = String.format("Comment operation failed: %s", ex.getErrorCode().getMessage());
@@ -134,18 +168,25 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
-    // 공통 로그 저장 메서드
+    /**
+     * 공통 로그 저장 메서드.
+     *
+     * @param ex 발생한 예외 객체
+     * @param errorMessage 로그로 저장할 에러 메시지
+     */
     private void saveLog(Exception ex, String errorMessage) {
-        log.error(errorMessage);
-        logService.saveLog("ERROR", errorMessage, ex.getMessage());
+        log.error(errorMessage); // 에러 메시지를 로그로 출력
+        logService.saveLog("ERROR", errorMessage, ex.getMessage()); // 로그 서비스에 에러 저장
     }
 
-    // ValidationError 클래스 정의
-    @Getter
-    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    /**
+     * 입력값 유효성 검증 오류 정보를 담는 클래스.
+     */
+    @Getter // Lombok 어노테이션: 각 필드에 대한 Getter 메서드를 자동 생성
+    @AllArgsConstructor(access = AccessLevel.PRIVATE) // 모든 필드를 포함하는 생성자를 생성하며, 접근 수준을 PRIVATE로 제한
     private class ValidationError {
-        private final String field;
-        private final Object rejectedValue;
-        private final String message;
+        private final String field; // 오류가 발생한 필드 이름
+        private final Object rejectedValue; // 거부된 값
+        private final String message; // 오류 메시지
     }
 }

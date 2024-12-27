@@ -16,7 +16,7 @@ public interface UserService {
      * @param request 사용자 회원가입 요청 DTO
      * @return 생성된 사용자의 고유 ID
      */
-    Long create(UserSignUpRequestDto request);
+    Long add(UserSignUpRequestDto request);
 
     /**
      * 특정 사용자를 조회합니다.
