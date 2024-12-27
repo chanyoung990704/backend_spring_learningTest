@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.entity.Comment;
 import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
+import org.example.restfulblogflatform.repository.CommentRepository;
 import org.example.restfulblogflatform.service.post.PostService;
 import org.example.restfulblogflatform.service.user.UserService;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final PostService postService;
     private final UserService userService;
+    private final CommentRepository commentRepository;
     private final CommentValidator commentValidator; // 댓글 검증 로직
 
     @Override
@@ -24,16 +26,10 @@ public class CommentServiceImpl implements CommentService {
         Post post = postService.getPost(postId);
         User user = userService.get(userId);
 
-        // 댓글 생성
-        Comment comment = Comment.builder()
-                .content(content)
-                .user(user)
-                .build();
+        // 댓글 생성 & 양방향 연관 관계 설정
+        Comment comment = Comment.createComment(user, post, content);
 
-        // 양방향 연관 관계 설정
-        post.addComment(comment);
-
-        return comment;
+        return commentRepository.save(comment);
     }
 
     @Override

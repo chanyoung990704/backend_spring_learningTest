@@ -1,6 +1,8 @@
 package org.example.restfulblogflatform.service.post;
 
 import lombok.RequiredArgsConstructor;
+import org.example.restfulblogflatform.dto.post.request.PostRequest;
+import org.example.restfulblogflatform.dto.post.response.PostResponse;
 import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.repository.PostRepository;
@@ -17,30 +19,27 @@ public class PostServiceImpl implements PostService {
 
     private final PostRepository postRepository;
     private final UserService userService;
-    private final PostValidator postValidator; // Post 관련 검증 로직
+    private final PostValidator postValidator;
 
     @Override
     @Transactional
-    public Post createPost(String title, String content, Long userId) {
-        // 사용자 존재 여부 확인 (UserValidator를 통해 처리 가능)
+    public PostResponse createPost(PostRequest postRequest, Long userId) {
+
+
         User user = userService.get(userId);
 
-        // 게시글 생성
-        Post post = Post.builder()
-                .title(title)
-                .content(content)
-                .build();
+        // 게시글 생성 & 연관관계 등록
+        Post post = Post.createPost(user, postRequest.getTitle(), postRequest.getContent());
 
-        // 등록
-        user.addPost(post);
-
-        return post;
+        // 저장 후 DTO 변환하여 반환
+        return PostResponse.of(postRepository.save(post));
     }
 
     @Override
     public Post getPost(Long postId) {
         // 게시글 가져오기 (검증 포함)
-        return postValidator.getPostOrThrow(postId);
+        Post post = postValidator.getPostOrThrow(postId);
+        return post;
     }
 
     @Override
@@ -50,19 +49,23 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public Post updatePost(Long postId, String title, String content) {
+    public PostResponse updatePost(Long postId, String title, String content) {
         // 게시글 가져오기 및 검증
         Post post = postValidator.getPostOrThrow(postId);
 
         // 업데이트 수행
         post.update(title, content);
-        return post;
+        return PostResponse.of(post);
     }
 
     @Override
     @Transactional
     public void deletePost(Long postId) {
+        // 게시글 가져오기 및 검증
         Post post = postValidator.getPostOrThrow(postId);
+
+        // 연관관계 제거 및 삭제 (CascadeType.REMOVE를 사용하는 경우 생략 가능)
         post.getUser().removePost(post);
+        postRepository.delete(post);
     }
 }

@@ -5,8 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.restfulblogflatform.exception.business.CommentException;
+import org.example.restfulblogflatform.exception.business.PostException;
 import org.example.restfulblogflatform.exception.response.ErrorResponse;
-import org.example.restfulblogflatform.exception.user.UserException;
+import org.example.restfulblogflatform.exception.business.UserException;
 import org.example.restfulblogflatform.log.service.LogService;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
@@ -72,8 +74,9 @@ public class GlobalExceptionHandler {
     // 데이터 엑세스 관련 예외 처리
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException ex) {
-        String errorMessage = String.format("DataSoruce operation failed: %s", ex.getMessage());
+        String errorMessage = String.format("DataSource operation failed: %s", ex.getMessage());
         saveLog(ex, errorMessage);
+
         ErrorResponse<Object> errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .message(ex.getMessage())
@@ -99,11 +102,45 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errorResponse);
     }
 
+    // Post 관련 예외 처리
+    @ExceptionHandler(PostException.class)
+    public ResponseEntity<ErrorResponse> handlePostException(PostException ex) {
+        String errorMessage = String.format("Post operation failed: %s", ex.getErrorCode().getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(ex.getErrorCode().getMessage())
+                .data(ex.getErrorCode().name())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    // Comment 관련 예외 처리
+    @ExceptionHandler(CommentException.class)
+    public ResponseEntity<ErrorResponse> handleCommentException(CommentException ex) {
+        String errorMessage = String.format("Comment operation failed: %s", ex.getErrorCode().getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(ex.getErrorCode().getMessage())
+                .data(ex.getErrorCode().name())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    // 공통 로그 저장 메서드
     private void saveLog(Exception ex, String errorMessage) {
         log.error(errorMessage);
         logService.saveLog("ERROR", errorMessage, ex.getMessage());
     }
 
+    // ValidationError 클래스 정의
     @Getter
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     private class ValidationError {

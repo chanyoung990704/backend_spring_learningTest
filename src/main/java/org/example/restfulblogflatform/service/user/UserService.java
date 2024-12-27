@@ -5,14 +5,39 @@ import org.example.restfulblogflatform.entity.User;
 
 import java.util.List;
 
+/**
+ * 사용자 관련 비즈니스 로직을 처리하기 위한 서비스 인터페이스
+ */
 public interface UserService {
 
-    Long create(UserSignUpRequestDto request); // Create
+    /**
+     * 새로운 사용자를 생성합니다.
+     *
+     * @param request 사용자 회원가입 요청 DTO
+     * @return 생성된 사용자의 고유 ID
+     */
+    Long create(UserSignUpRequestDto request);
 
-    User get(Long userId); // Read (단일 조회)
+    /**
+     * 특정 사용자를 조회합니다.
+     *
+     * @param userId 조회할 사용자의 고유 ID
+     * @return 조회된 사용자 엔티티
+     */
+    User get(Long userId);
 
-    List<User> getAll(); // Read (전체 조회)
+    /**
+     * 모든 사용자를 조회합니다.
+     *
+     * @return 모든 사용자 엔티티 리스트
+     */
+    List<User> getAll();
 
-    void delete(Long userId); // Delete
-
+    /**
+     * 특정 사용자를 삭제합니다.
+     *
+     * @param userId 삭제할 사용자의 고유 ID
+     */
+    void delete(Long userId);
 }
+

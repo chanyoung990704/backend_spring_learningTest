@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,31 +37,37 @@ class UserServiceTest {
     private UserServiceImpl userService;
 
     @Test
-    @DisplayName("회원가입성공테스트")
+    @DisplayName("회원가입 성공 테스트")
     void createUserSuccess() {
         // given
-        UserSignUpRequestDto requestDto = UserSignUpRequestDto.builder()
-                .username("testUser")
-                .password("testPassword1234!!")
-                .email("testUser@example.com")
-                .build();
+        UserSignUpRequestDto requestDto = new UserSignUpRequestDto(
+                "testUser@example.com",
+                "testPassword1234!!",
+                "testUser"
+        );
 
-        User mockUser = User.builder()
-                .id(1L)
-                .username(requestDto.getUsername())
-                .password("encodedPassword")
-                .email(requestDto.getEmail())
-                .build();
+        // 정적 팩토리 메서드로 User 생성
+        User mockUser = User.createUser(
+                requestDto.getUsername(),
+                "encodedPassword",
+                requestDto.getEmail()
+        );
+
+        // ID 설정 (Reflection 사용)
+        setId(mockUser, 1L);
+
+        // Mock 동작 정의
+        given(passwordEncoder.encode(requestDto.getPassword())).willReturn("encodedPassword");
+        given(userRepository.save(any(User.class))).willReturn(mockUser);
+        doNothing().when(validator).validateEmailNotDuplicate(requestDto.getEmail());
 
         // when
-        given(passwordEncoder.encode(any())).willReturn("encodedPassword");
-        given(userRepository.save(any(User.class))).willReturn(mockUser);
-        doNothing().when(validator).validateEmailNotDuplicate(any());
+        Long userId = userService.create(requestDto);
 
         // then
-        Long userId = userService.create(requestDto);
-        assertEquals(userId, mockUser.getId());
+        assertEquals(1L, userId);
 
+        // 검증
         verify(validator).validateEmailNotDuplicate(requestDto.getEmail());
         verify(passwordEncoder).encode(requestDto.getPassword());
         verify(userRepository).save(any(User.class));
@@ -70,30 +77,25 @@ class UserServiceTest {
     @DisplayName("전체 사용자 조회 테스트")
     void readAllUsersSuccess() {
         // given
-        List<User> mockUsers = Arrays.asList(
+        User user1 = User.createUser("user1", "password1", "user1@test.com");
+        User user2 = User.createUser("user2", "password2", "user2@test.com");
 
-                User.builder()
-                        .id(1L)
-                        .username("user1")
-                        .password("password1")
-                        .email("user1@test.com")
-                        .build(),
+        setId(user1, 1L);
+        setId(user2, 2L);
 
-                User.builder()
-                        .id(2L)
-                        .username("user2")
-                        .password("password2")
-                        .email("user2@test.com")
-                        .build()
+        List<User> mockUsers = Arrays.asList(user1, user2);
 
-        );
+        // Mock 동작 정의
+        given(userRepository.findAll()).willReturn(mockUsers);
 
         // when
-        given(userRepository.findAll()).willReturn(mockUsers);
-        List<User> results = userService.readAll();
+        List<User> results = userService.getAll();
 
         // then
-        assertEquals(results.size(), 2);
+        assertEquals(2, results.size());
+        assertEquals(1L, results.get(0).getId());
+        assertEquals(2L, results.get(1).getId());
+
         verify(userRepository).findAll();
     }
 
@@ -103,13 +105,25 @@ class UserServiceTest {
         // given
         Long userId = 1L;
 
-        // when
+        // Mock 동작 정의
         doNothing().when(validator).validateUserExists(userId);
-        doNothing().when(userRepository).deleteById(userId);
+
+        // when
         userService.delete(userId);
 
         // then
         verify(validator).validateUserExists(userId);
         verify(userRepository).deleteById(userId);
     }
+
+    private void setId(User user, Long id) {
+        try {
+            Field idField = User.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            idField.set(user, id);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
+

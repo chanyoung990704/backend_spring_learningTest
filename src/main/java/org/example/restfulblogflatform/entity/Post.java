@@ -9,8 +9,6 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 @Table(name = "posts")
 public class Post extends BaseEntity {
 
@@ -29,10 +27,22 @@ public class Post extends BaseEntity {
     private User user;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
+    private List<Comment> comments;
 
     @Column(nullable = false)
     private int viewCount = 0;
+
+    // 정적 팩토리 메서드
+    public static Post createPost(User user, String title, String content) {
+        Post post = new Post();
+        post.title = title;
+        post.content = content;
+        post.viewCount = 0; // 초기 조회수 설정
+        post.comments = new ArrayList<>();
+        post.setUser(user);
+        user.addPost(post); // 양방향 연관관계 설정
+        return post;
+    }
 
     // 연관관계를 위한 UserSetter
     public void setUser(User user) {
@@ -61,5 +71,4 @@ public class Post extends BaseEntity {
         }
         return this;
     }
-
 }

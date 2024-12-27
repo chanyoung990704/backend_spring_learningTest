@@ -9,8 +9,6 @@ import java.util.List;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Builder
 @Table(name = "users")
 public class User extends BaseEntity {
 
@@ -27,27 +25,29 @@ public class User extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @OneToMany(mappedBy = "user")
-    private List<Post> posts = new ArrayList<>();
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Post> posts;
 
-    // 게시글 추가 메서드 (양방향 연관관계 편의 메서드)
+    // 정적 팩토리 메서드
+    public static User createUser(String username, String password, String email) {
+        User user = new User();
+        user.username = username;
+        user.password = password;
+        user.email = email;
+        user.posts = new ArrayList<>();
+        return user;
+    }
+
+    // 게시글 추가 메서드
     public void addPost(Post post) {
         posts.add(post);
         post.setUser(this);
     }
 
-    // 게시글 제거 메서드 (양방향 연관관계 편의 메서드)
+    // 게시글 제거 메서드
     public void removePost(Post post) {
         posts.remove(post);
         post.setUser(null);
     }
-
-    // 업데이트용 메서드
-//    public User update(UpdateUserDto dto) {
-//        if(dto.getUsername() != null) this.username = dto.getUsername();
-//        if(dto.getPassword() != null) this.password = dto.getPassword();
-//        if(dto.getEmail() != null) this.email = dto.getEmail();
-//        return this;
-//    }
 }
 

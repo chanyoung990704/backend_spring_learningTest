@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.jwt.JwtRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -18,6 +19,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -29,18 +32,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable()) // CSRF 비활성화
+                .cors(withDefaults()) // CORS 활성화
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인 엔드포인트 인증 불필요
-                        .anyRequest().authenticated() // 나머지 요청은 인증 필요
+                        .anyRequest().permitAll() // 모든 요청 인증 없이 허용
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // JWT 사용 시 Stateless 설정
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless 세션 정책
                 );
 
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
