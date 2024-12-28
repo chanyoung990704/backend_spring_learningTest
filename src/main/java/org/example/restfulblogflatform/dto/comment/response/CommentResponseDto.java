@@ -4,13 +4,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.example.restfulblogflatform.entity.Comment;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 public class CommentResponseDto {
     private Long id; // 댓글 ID
     private String content; // 댓글 내용
     private String username; // 작성자 이름
-    private Long postId; // 게시글 ID
+    private LocalDateTime createAt; // 댓글 작성날짜
 
     /**
      * 정적 팩토리 메서드: Comment 엔티티를 CommentResponseDto로 변환합니다.
@@ -23,7 +25,7 @@ public class CommentResponseDto {
         responseDto.setId(comment.getId());
         responseDto.setContent(comment.getContent());
         responseDto.setUsername(comment.getUser().getUsername());
-        responseDto.setPostId(comment.getPost().getId());
+        responseDto.setCreateAt(comment.getCreatedDate());
         return responseDto;
     }
 }
