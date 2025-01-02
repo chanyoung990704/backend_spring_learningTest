@@ -2,14 +2,11 @@ package org.example.restfulblogflatform.service;
 
 import org.example.restfulblogflatform.ResTfulBlogFlatformApplication;
 import org.example.restfulblogflatform.dto.comment.response.CommentResponseDto;
-import org.example.restfulblogflatform.dto.post.request.PostRequest;
-import org.example.restfulblogflatform.dto.post.response.PostResponse;
+import org.example.restfulblogflatform.dto.post.request.PostRequestDto;
+import org.example.restfulblogflatform.dto.post.response.PostResponseDto;
 import org.example.restfulblogflatform.dto.user.request.UserSignUpRequestDto;
 import org.example.restfulblogflatform.entity.Comment;
-import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
-import org.example.restfulblogflatform.exception.ErrorCode;
-import org.example.restfulblogflatform.exception.business.CommentException;
 import org.example.restfulblogflatform.repository.CommentRepository;
 import org.example.restfulblogflatform.repository.PostRepository;
 import org.example.restfulblogflatform.repository.UserRepository;
@@ -18,15 +15,16 @@ import org.example.restfulblogflatform.service.post.PostService;
 import org.example.restfulblogflatform.service.user.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,15 +65,18 @@ class IntegrationTest {
         assertEquals("testUser@example.com", user.getEmail());
 
         // 게시글 생성
-        PostRequest postRequest = new PostRequest("Test Post Title", "Test Post Content");
-        PostResponse postResponse = postService.add(postRequest, userId);
-        assertNotNull(postResponse);
-        assertEquals("Test Post Title", postResponse.getTitle());
+        PostRequestDto postRequestDto = new PostRequestDto("Test Post Title", "Test Post Content");
+        PostResponseDto postResponseDto = postService.add(postRequestDto, userId);
+        assertNotNull(postResponseDto);
+        assertEquals("Test Post Title", postResponseDto.getTitle());
 
         // 댓글 생성 및 조회 확인
-        Comment comment = commentService.add(postResponse.getId(), userId, "This is a test comment");
-        assertNotNull(comment);
-        List<CommentResponseDto> comments = commentService.getAll(postResponse.getId());
+        CommentResponseDto commentResponseDto = commentService.add(postResponseDto.getId(), userId, "This is a test comment");
+        assertNotNull(commentResponseDto);
+        // 댓글 조회 (페이징 처리)
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("id").ascending()); // 페이지 번호 0, 크기 10, id 기준 정렬
+        Page<CommentResponseDto> commentsPage = commentService.getAll(postResponseDto.getId(), pageable);
+        List<CommentResponseDto> comments = commentsPage.getContent();
         assertEquals(1, comments.size());
         assertEquals("This is a test comment", comments.get(0).getContent());
 
