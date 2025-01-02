@@ -58,4 +58,16 @@ public class Comment extends BaseEntity { // BaseEntity를 상속받아 생성/�
     public void setPost(Post post) {
         this.post = post;
     }
+
+
+    /**
+     * 댓글 내용을 업데이트하는 메서드.
+     *
+     * @param content 새로운 댓글 내용
+     * @implNote 댓글 내용의 유효성 검사는 DTO에서 @Validation으로 처리됩니다.
+     */
+    public void updateContent(String content) {
+        this.content = content;
+    }
+
 }

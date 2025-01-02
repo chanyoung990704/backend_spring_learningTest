@@ -56,24 +56,18 @@ public class CommentServiceImpl implements CommentService {
     }
 
     /**
-     * 댓글 삭제 메서드
+     * 특정 댓글 조회 메서드
      *
-     * 이 메서드는 특정 댓글을 삭제합니다.
-     * 삭제하려는 댓글이 존재하지 않거나 권한이 없는 경우 예외를 발생시킵니다.
+     * 이 메서드는 특정 ID를 가진 댓글을 조회하여 반환합니다.
+     * 댓글이 존재하지 않으면 예외를 발생시킵니다.
      *
-     * @param commentId 삭제할 댓글의 ID (고유 식별자)
+     * @param commentId 조회할 댓글의 ID (고유 식별자)
+     * @return 조회된 댓글(Comment) 객체 (엔티티 형태로 반환)
      */
     @Override
-    @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
-    public void delete(Long commentId) {
+    public Comment get(Long commentId) {
         // 댓글 가져오기 및 검증 (존재하지 않으면 예외 발생)
-        Comment comment = commentValidator.getCommentOrThrow(commentId);
-
-        // 양방향 연관 관계 해제 (게시글에서 댓글 제거)
-        comment.getPost().removeComment(comment);
-
-        // 데이터베이스에서 댓글 삭제
-        commentRepository.delete(comment);
+        return commentValidator.getCommentOrThrow(commentId);
     }
 
     /**
@@ -94,5 +88,47 @@ public class CommentServiceImpl implements CommentService {
         return comments.stream()
                 .map(comment -> CommentResponseDto.of(comment))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 댓글 업데이트 메서드
+     *
+     * 이 메서드는 특정 ID를 가진 댓글의 내용을 업데이트합니다.
+     *
+     * @param commentId 업데이트할 댓글의 ID (고유 식별자)
+     * @param userId 요청을 보낸 사용자의 ID (권한 확인용)
+     * @param content 새로운 댓글 내용 (수정된 텍스트)
+     * @return 업데이트된 댓글(Comment) 객체 (엔티티 형태로 반환)
+     */
+    @Override
+    @Transactional
+    public Comment update(Long commentId, Long userId, String content) {
+        // 댓글 가져오기 및 검증 (존재하지 않으면 예외 발생)
+        Comment comment = commentValidator.getCommentOrThrow(commentId);
+
+        // 댓글 내용 업데이트
+        comment.updateContent(content);
+
+        // 변경된 엔티티 반환
+        return comment;
+    }
+
+    /**
+     * 댓글 삭제 메서드
+     *
+     * 이 메서드는 특정 댓글을 삭제합니다.
+     * 삭제하려는 댓글이 존재하지 않거나 권한이 없는 경우 예외를 발생시킵니다.
+     *
+     * @param commentId 삭제할 댓글의 ID (고유 식별자)
+     */
+    @Override
+    @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
+    public void delete(Long commentId) {
+        // 댓글 가져오기 및 검증 (존재하지 않으면 예외 발생)
+        Comment comment = commentValidator.getCommentOrThrow(commentId);
+
+        // 양방향 연관 관계 해제 (게시글에서 댓글 제거)
+        comment.getPost().removeComment(comment);
+
     }
 }

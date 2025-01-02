@@ -205,6 +205,71 @@ class PostServiceImplTest {
     }
 
     /**
-     * 삭제 실패 처리
+     * 게시글 삭제 성공 테스트
      */
+    @Test
+    @DisplayName("게시글 삭제 성공 테스트")
+    void deleteSuccess() {
+        // given: 정상적인 게시글 ID로 요청 생성
+        Long postId = 1L;
+        User mockUser = mock(User.class); // Mock 객체 생성
+        Post mockPost = mock(Post.class); // Mock 객체 생성
+
+        // Mock 동작 정의: 게시글 조회 성공 처리
+        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+        given(mockPost.getUser()).willReturn(mockUser);
+
+        // when: 삭제 서비스 호출
+        postService.delete(postId);
+
+        // then: Mock 객체 동작 확인 (연관 관계 해제 확인)
+        verify(postValidator).getPostOrThrow(postId);
+        verify(mockPost).getUser();
+        verify(mockUser).removePost(mockPost); // 연관 관계 해제 메서드 호출 확인
+    }
+
+    /**
+     * 게시글 삭제 실패 테스트 - 게시글 없음
+     */
+    @Test
+    @DisplayName("게시글 삭제 실패 테스트 - 게시글 없음")
+    void deleteFailDueToPostNotFound() {
+        // given: 존재하지 않는 게시글 ID로 요청 생성
+        Long postId = 1L;
+
+        // Mock 동작 정의: 게시글 조회 시 예외 발생
+        given(postValidator.getPostOrThrow(postId)).willThrow(new PostException(ErrorCode.POST_NOT_FOUND));
+
+        // when & then: 예외 발생 여부 확인 및 검증
+        PostException exception = assertThrows(PostException.class, () -> postService.delete(postId));
+        assertEquals(ErrorCode.POST_NOT_FOUND, exception.getErrorCode());
+
+        // Mock 객체 동작 확인
+        verify(postValidator).getPostOrThrow(postId);
+        verifyNoInteractions(postRepository); // 저장소와의 상호작용이 없음을 확인
+    }
+
+    /**
+     * 게시글 삭제 실패 테스트 - 작성자 없음
+     */
+    @Test
+    @DisplayName("게시글 삭제 실패 테스트 - 작성자 없음")
+    void deleteFailDueToNoUser() {
+        // given: 정상적인 게시글 ID로 요청 생성, 그러나 사용자 정보가 null인 경우 설정
+        Long postId = 1L;
+        Post mockPost = mock(Post.class); // Mock 객체 생성
+
+        // Mock 동작 정의: 게시글 조회 성공, 그러나 사용자 정보가 null로 반환됨
+        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+        given(mockPost.getUser()).willReturn(null); // 사용자 정보가 없는 상태
+
+        // when & then: NullPointerException 또는 커스텀 예외 발생 여부 확인 및 검증
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> postService.delete(postId));
+
+        // Mock 객체 동작 확인
+        verify(postValidator).getPostOrThrow(postId);
+        verify(mockPost).getUser();
+    }
+
+
 }

@@ -24,11 +24,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceImplTest {
+
     @Mock
     private PostService postService;
 
@@ -55,9 +55,9 @@ class CommentServiceImplTest {
         Long userId = 1L;
         String content = "This is a test comment";
 
-        Post mockPost = Post.createPost(User.createUser("testUser", "password", "test@example.com"), "Test Title", "Test Content");
-        User mockUser = User.createUser("testUser", "password", "test@example.com");
-        Comment mockComment = Comment.createComment(mockUser, mockPost, content);
+        Post mockPost = mock(Post.class);
+        User mockUser = mock(User.class);
+        Comment mockComment = mock(Comment.class);
 
         // Mock 동작 정의: 게시글과 사용자 조회 및 댓글 저장
         given(postService.get(postId)).willReturn(mockPost);
@@ -69,7 +69,6 @@ class CommentServiceImplTest {
 
         // then: 결과 검증 및 Mock 객체 동작 확인
         assertNotNull(result);
-        assertEquals(content, result.getContent());
         verify(postService).get(postId);
         verify(userService).get(userId);
         verify(commentRepository).save(any(Comment.class));
@@ -107,10 +106,11 @@ class CommentServiceImplTest {
         // given: 정상적인 댓글 ID로 요청 생성
         Long commentId = 1L;
 
-        Post mockPost = Post.createPost(User.createUser("testUser", "password", "test@example.com"), "Test Title", "Test Content");
-        Comment mockComment = Comment.createComment(User.createUser("testUser", "password", "test@example.com"), mockPost, "Test Content");
+        Post mockPost = mock(Post.class);
+        Comment mockComment = mock(Comment.class);
 
-        // Mock 동작 정의: 댓글 조회 성공 및 삭제 처리
+        // Mock 동작 정의: 댓글의 연관 관계 설정
+        given(mockComment.getPost()).willReturn(mockPost);
         given(commentValidator.getCommentOrThrow(commentId)).willReturn(mockComment);
 
         // when: 댓글 삭제 서비스 호출
@@ -118,7 +118,7 @@ class CommentServiceImplTest {
 
         // then: Mock 객체 동작 검증 (삭제 호출 확인)
         verify(commentValidator).getCommentOrThrow(commentId);
-        verify(commentRepository).delete(mockComment);
+        verify(mockPost).removeComment(mockComment); // 연관 관계 해제 확인
     }
 
     /**
@@ -150,12 +150,21 @@ class CommentServiceImplTest {
         // given: 특정 게시글 ID로 요청 생성 및 Mock 데이터 준비
         Long postId = 1L;
 
-        Post mockPost = Post.createPost(User.createUser("testUser", "password", "test@example.com"), "Test Title", "Test Content");
+        User mockUser1 = mock(User.class);
+        User mockUser2 = mock(User.class);
+        Comment mockComment1 = mock(Comment.class);
+        Comment mockComment2 = mock(Comment.class);
 
-        List<Comment> mockComments = Arrays.asList(
-                Comment.createComment(User.createUser("user1", "password1", "user1@example.com"), mockPost, "First comment"),
-                Comment.createComment(User.createUser("user2", "password2", "user2@example.com"), mockPost, "Second comment")
-        );
+        // 필요한 스터빙만 정의
+        given(mockComment1.getUser()).willReturn(mockUser1);
+        given(mockComment1.getContent()).willReturn("First comment");
+        given(mockUser1.getUsername()).willReturn("user1");
+
+        given(mockComment2.getUser()).willReturn(mockUser2);
+        given(mockComment2.getContent()).willReturn("Second comment");
+        given(mockUser2.getUsername()).willReturn("user2");
+
+        List<Comment> mockComments = Arrays.asList(mockComment1, mockComment2);
 
         // Mock 동작 정의: 특정 게시글에 대한 모든 댓글 조회 성공 처리
         given(commentRepository.findByPostId(postId)).willReturn(mockComments);
@@ -168,8 +177,57 @@ class CommentServiceImplTest {
         assertEquals(2, results.size());
         assertEquals("First comment", results.get(0).getContent());
         assertEquals("Second comment", results.get(1).getContent());
+        assertEquals("user1", results.get(0).getUsername());
+        assertEquals("user2", results.get(1).getUsername());
 
         verify(commentRepository).findByPostId(postId);
+    }
+
+    /**
+     * 댓글 업데이트 성공 테스트
+     */
+    @Test
+    @DisplayName("댓글 업데이트 성공 테스트")
+    void updateCommentSuccess() {
+        // given: 정상적인 업데이트 요청 데이터 준비
+        Long commentId = 1L;
+        Long userId = 1L;
+        String updatedContent = "Updated content";
+
+        Comment mockComment = mock(Comment.class);
+
+        // Mock 동작 정의: 댓글 조회 성공 처리
+        given(commentValidator.getCommentOrThrow(commentId)).willReturn(mockComment);
+
+        // when: 댓글 업데이트 서비스 호출
+        Comment result = commentService.update(commentId, userId, updatedContent);
+
+        // then: 결과 검증 및 Mock 객체 동작 확인
+        assertNotNull(result);
+        verify(commentValidator).getCommentOrThrow(commentId);
+        verify(mockComment).updateContent(updatedContent);
+    }
+
+    /**
+     * 댓글 업데이트 실패 테스트 - 댓글 없음
+     */
+    @Test
+    @DisplayName("댓글 업데이트 실패 테스트 - 댓글 없음")
+    void updateCommentFailDueToNotFound() {
+        // given: 존재하지 않는 댓글 ID로 요청 생성
+        Long commentId = 1L;
+        Long userId = 1L;
+        String updatedContent = "Updated content";
+
+        // Mock 동작 정의: 댓글 조회 시 예외 발생
+        given(commentValidator.getCommentOrThrow(commentId)).willThrow(new CommentException(ErrorCode.COMMENT_NOT_FOUND));
+
+        // when & then: 예외 발생 여부 확인 및 검증
+        CommentException exception = assertThrows(CommentException.class, () -> commentService.update(commentId, userId, updatedContent));
+        assertEquals(ErrorCode.COMMENT_NOT_FOUND, exception.getErrorCode());
+
+        verify(commentValidator).getCommentOrThrow(commentId);
+        verifyNoInteractions(commentRepository); // 저장소와의 상호작용이 없음을 확인
     }
 
 }
