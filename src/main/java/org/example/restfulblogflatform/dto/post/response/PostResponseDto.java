@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  */
 @Getter // Lombok 어노테이션: 각 필드에 대한 Getter 메서드를 자동 생성
 @AllArgsConstructor(staticName = "of") // Lombok 어노테이션: 모든 필드를 포함하는 생성자를 생성하며, static 팩토리 메서드("of")도 제공
-public class PostResponse {
+public class PostResponseDto {
 
     private Long id; // 게시글 ID
     private String title; // 게시글 제목
@@ -27,8 +27,8 @@ public class PostResponse {
      * @param post Post 엔티티 객체
      * @return PostResponse - 변환된 응답 객체
      */
-    public static PostResponse of(Post post) {
-        return new PostResponse(
+    public static PostResponseDto of(Post post) {
+        return new PostResponseDto(
                 post.getId(), // 게시글 ID
                 post.getTitle(), // 게시글 제목
                 post.getContent(), // 게시글 내용

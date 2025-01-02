@@ -11,7 +11,7 @@ import lombok.*;
 @Getter // Lombok 어노테이션: 각 필드에 대한 Getter 메서드 자동 생성
 @Setter // Lombok 어노테이션: 각 필드에 대한 Setter 메서드 자동 생성
 @AllArgsConstructor // Lombok 어노테이션: 모든 필드를 포함하는 생성자 자동 생성
-public class PostRequest {
+public class PostRequestDto {
 
     @NotBlank(message = "제목은 필수 입니다.") // 제목이 비어있거나 공백일 경우 유효성 검증 실패
     private String title; // 게시글 제목
