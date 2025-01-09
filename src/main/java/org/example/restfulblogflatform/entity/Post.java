@@ -37,6 +37,7 @@ public class Post extends BaseEntity { // BaseEntity를 상속받아 생성/수�
     private List<Comment> comments; // 게시글에 달린 댓글 목록
 
     @Column(nullable = false) // 조회수는 null 불가
+    @Version // 낙관적 락 버전 관리 필드
     private int viewCount = 0; // 게시글 조회수 (기본값 0)
 
     /**
@@ -107,4 +108,12 @@ public class Post extends BaseEntity { // BaseEntity를 상속받아 생성/수�
         }
         return this; // 업데이트된 Post 객체 반환
     }
+
+    /**
+     * 게시글 조회수를 1 증가시키는 메서드.
+     */
+    public void incrementViewCount() {
+        this.viewCount++;
+    }
+
 }

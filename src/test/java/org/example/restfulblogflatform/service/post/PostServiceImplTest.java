@@ -5,6 +5,7 @@ import org.example.restfulblogflatform.dto.post.response.PostResponseDto;
 import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.exception.ErrorCode;
+import org.example.restfulblogflatform.exception.business.PostException;
 import org.example.restfulblogflatform.exception.business.UserException;
 import org.example.restfulblogflatform.repository.PostRepository;
 import org.example.restfulblogflatform.service.user.UserService;
@@ -190,6 +191,51 @@ class PostServiceImplTest {
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
         verify(userService).get(userId);
         verify(postRepository, never()).save(any(Post.class));
+    }
+
+    /**
+     * 게시글 단일 조회 실패 테스트 - 게시글 없음
+     */
+    @Test
+    @DisplayName("게시글 단일 조회 실패 테스트 - 게시글 없음")
+    void getPostFailDueToPostNotFound(){
+        // given
+        Long postId = 1L;
+
+        given(postValidator.getPostOrThrow(postId)).willThrow(new PostException(ErrorCode.POST_NOT_FOUND));
+
+        // when & then
+        assertThrows(PostException.class, () -> {
+            postService.getResponseDto(postId);
+        });
+
+        verify(postValidator).getPostOrThrow(postId);
+    }
+
+    /**
+     * 게시글 단일 조회 성공 테스트 - 조회수 증가 확인
+     */
+    @Test
+    @DisplayName("게시글 단일 조회 성공 테스트 - 조회수 증가 확인")
+    void getPostAndIncrementViewCountSuccess(){
+        // given
+        Long postId = 1L;
+        User mockUser = User.createUser("testUser", "password", "test@example.com");
+        Post mockPost = Post.createPost(mockUser, "Test Title", "Test Content"); // Mock 게시글 객체 생성
+
+        // Mock 동작 정의: postRepository에서 해당 ID의 게시글 반환
+        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+
+        // when
+        PostResponseDto responseDto = postService.getResponseDto(postId);
+
+        // then
+        assertNotNull(responseDto); // 응답 DTO가 null이 아닌지 확인
+        assertEquals(mockPost.getTitle(), responseDto.getTitle()); // 제목 확인
+        assertEquals(mockPost.getContent(), responseDto.getContent()); // 내용 확인
+        assertEquals(1, mockPost.getViewCount()); // 조회수가 1 증가했는지 확인
+
+        verify(postValidator).getPostOrThrow(postId); // findById 호출 확인
     }
 }
 
