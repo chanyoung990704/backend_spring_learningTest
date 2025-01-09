@@ -1,5 +1,6 @@
 package org.example.restfulblogflatform.exception.handler;
 
+import io.jsonwebtoken.security.SignatureException;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -166,6 +167,27 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * JWT 서명 검증 실패(SignatureException) 예외 처리.
+     *
+     * @param ex SignatureException 객체
+     * @return HTTP 401 Unauthorized 응답
+     */
+    @ExceptionHandler(SignatureException.class)
+    public ResponseEntity<ErrorResponse> handleSignatureException(SignatureException ex) {
+        String errorMessage = String.format("JWT signature validation failed: %s", ex.getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED)
+                .message("JWT 서명이 유효하지 않습니다.")
+                .data(null)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
     /**
