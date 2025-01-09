@@ -20,7 +20,6 @@ public class PostResponseDto {
     private String username; // 작성자 이름
     private Long userId; // 작성자 ID
     private LocalDateTime createdAt; // 게시글 생성 시간
-    private int viewCount; // 게시글 조회수
 
     /**
      * Post 엔티티를 PostResponse DTO로 변환하는 정적 팩토리 메서드.
@@ -35,8 +34,7 @@ public class PostResponseDto {
                 post.getContent(), // 게시글 내용
                 post.getUser().getUsername(), // 작성자 이름 (User 엔티티에서 가져옴)
                 post.getUser().getId(), // 작성자 ID (User 엔티티에서 가져옴)
-                post.getCreatedDate(), // 생성 시간
-                post.getViewCount() // 게시글 조회수
+                post.getCreatedDate() // 생성 시간
         );
     }
 }
