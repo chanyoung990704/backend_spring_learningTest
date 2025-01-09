@@ -61,14 +61,20 @@ public class PostServiceImpl implements PostService {
     /**
      * 게시글 단일 조회 (응답 DTO 형태)
      *
-     * 특정 ID를 가진 게시글을 조회하고, 해당 데이터를 응답 DTO 형태로 반환합니다.
+     * 특정 ID를 가진 게시글을 조회하고, 조회수를 증가시킨 후 해당 데이터를 응답 DTO 형태로 반환합니다.
      *
      * @param postId 조회할 게시글의 ID
      * @return 조회된 게시글 정보를 담은 응답 DTO
      */
     @Override
+    @Transactional
     public PostResponseDto getResponseDto(Long postId) {
-        return PostResponseDto.of(get(postId)); // 엔티티를 DTO로 변환하여 반환
+        // 게시글을 데이터베이스에서 가져옴( validator 사용)
+        Post post = postValidator.getPostOrThrow(postId);
+        // 조회수 증가
+        post.incrementViewCount();
+        // 엔티티를 DTO로 변환하여 반환
+        return PostResponseDto.of(post);
     }
 
     /**

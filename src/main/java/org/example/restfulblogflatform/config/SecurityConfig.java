@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.jwt.JwtRequestFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -44,6 +45,7 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable()) // CSRF 비활성화 (JWT 사용 시 필요 없음)
                 .cors(withDefaults()) // CORS 활성화 (기본 설정 사용)
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.POST, "/api/posts").permitAll() // 인증 필요 작업
                         .anyRequest().permitAll() // 모든 요청을 인증 없이 허용
                 )
                 .sessionManagement(session -> session
