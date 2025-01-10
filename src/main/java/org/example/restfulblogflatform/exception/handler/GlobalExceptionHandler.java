@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.restfulblogflatform.exception.business.CommentException;
 import org.example.restfulblogflatform.exception.business.PostException;
+import org.example.restfulblogflatform.exception.jwt.JwtException;
 import org.example.restfulblogflatform.exception.response.ErrorResponse;
 import org.example.restfulblogflatform.exception.business.UserException;
 import org.example.restfulblogflatform.log.service.LogService;
@@ -167,6 +168,27 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
+     * JWT 관련 예외 처리
+     *
+     * @param ex JwtException 객체
+     * @return HTTP 401 Unauthorized 응답
+     */
+    @ExceptionHandler(JwtException.class)
+    public ResponseEntity<ErrorResponse> handleJwtException(JwtException ex) {
+        String errorMessage = String.format("JWT operation failed: %s", ex.getErrorCode().getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.UNAUTHORIZED)
+                .message(ex.getErrorCode().getMessage())
+                .data(ex.getErrorCode().name())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
     }
 
     /**

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * JWT 토큰 생성 및 검증을 처리하는 유틸리티 클래스.
@@ -15,6 +17,9 @@ import java.util.Date;
  */
 @Component // Spring의 Bean으로 등록
 public class JwtUtil {
+
+    // 로그아웃된 토큰을 저장하는 Set (실제 운영환경에서는 Redis)
+    private final Set<String> blacklistedTokens = new HashSet<>();
 
     // 비밀 키(SECRET_KEY)를 생성 (HS256 알고리즘 사용)
     private final Key SECRET_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
@@ -58,6 +63,17 @@ public class JwtUtil {
                 .getBody(); // 클레임 반환
     }
 
+
+    /**
+     * 토큰을 블랙리스트에 추가하여 무효화합니다.
+     *
+     * @param token 무효화할 JWT 토큰
+     */
+    public void invalidateToken(String token) {
+        blacklistedTokens.add(token);
+    }
+
+
     /**
      * JWT 토큰의 유효성을 검사합니다.
      *
@@ -66,6 +82,10 @@ public class JwtUtil {
      * @return 토큰이 유효하면 true, 그렇지 않으면 false 반환
      */
     public boolean isTokenValid(String token, String username) {
+        // 블랙리스트 체크
+        if (blacklistedTokens.contains(token)) {
+            return false;
+        }
         final String extractedUsername = extractUsername(token); // 토큰에서 사용자 이름 추출
         return (extractedUsername.equals(username) && !isTokenExpired(token)); // 사용자 이름 일치 및 만료 여부 확인
     }

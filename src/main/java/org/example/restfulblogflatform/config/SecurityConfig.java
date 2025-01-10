@@ -1,5 +1,6 @@
 package org.example.restfulblogflatform.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.jwt.JwtRequestFilter;
 import org.springframework.context.annotation.Bean;
@@ -33,30 +34,61 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService; // 사용자 정보를 로드하는 서비스
 
     /**
-     * SecurityFilterChain 빈 등록.
-     * HTTP 요청에 대한 보안 정책을 정의합니다.
+     * HTTP 보안 필터 체인 구성을 정의하는 메서드
      *
-     * @param http HttpSecurity 객체로, 보안 설정을 구성하는 데 사용됩니다.
-     * @return SecurityFilterChain - HTTP 보안 필터 체인
-     * @throws Exception 예외가 발생할 수 있음
+     * @param http HttpSecurity 객체
+     * @return 구성된 SecurityFilterChain
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable()) // CSRF 비활성화 (JWT 사용 시 필요 없음)
-                .cors(withDefaults()) // CORS 활성화 (기본 설정 사용)
+        http
+                // CSRF 보호 비활성화 (JWT 사용으로 불필요)
+                .csrf(csrf -> csrf.disable())
+
+                // CORS 기본 설정 활성화
+                .cors(withDefaults())
+
+                // HTTP 요청에 대한 접근 권한 설정
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, "/api/posts").permitAll() // 인증 필요 작업
-                        .anyRequest().permitAll() // 모든 요청을 인증 없이 허용
+                        // 로그인/회원가입 엔드포인트는 모든 사용자 접근 허용
+                        .requestMatchers("/api/login", "/api/register").permitAll()
+                        // 로그아웃은 인증된 사용자만 접근 가능
+                        .requestMatchers("/api/logout").authenticated()
+                        // POST /api/posts 엔드포인트는 인증 필요
+                        .requestMatchers(HttpMethod.POST, "/api/posts").authenticated()
+                        // 그 외 모든 요청은 허용
+                        .anyRequest().permitAll()
                 )
+
+                // 세션 관리 설정
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless 세션 정책 (JWT 사용)
+                        // JWT 사용으로 인한 Stateless 세션 정책 설정
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // 로그아웃 설정
+                .logout(logout -> logout
+                        // 로그아웃 처리 URL 설정
+                        .logoutUrl("/api/logout")
+                        // 로그아웃 성공 시 처리할 핸들러 설정
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"message\": \"로그아웃 성공\"}");
+                        })
+                        // 세션 무효화
+                        .invalidateHttpSession(true)
+                        // 인증 정보 제거
+                        .clearAuthentication(true)
                 );
 
-        // UsernamePasswordAuthenticationFilter 앞에 JWT 요청 필터 추가
+        // JWT 필터를 Spring Security 필터 체인에 추가
+        // UsernamePasswordAuthenticationFilter 이전에 실행되도록 설정
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build(); // 보안 필터 체인 반환
+        return http.build();
     }
+
 
     /**
      * PasswordEncoder 빈 등록.

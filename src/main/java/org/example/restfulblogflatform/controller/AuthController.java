@@ -1,17 +1,20 @@
 package org.example.restfulblogflatform.controller;
 
 import lombok.*;
+import org.example.restfulblogflatform.exception.JwtErrorCode;
+import org.example.restfulblogflatform.exception.jwt.JwtException;
+import org.example.restfulblogflatform.exception.response.ErrorResponse;
 import org.example.restfulblogflatform.jwt.JwtUtil;
 import org.example.restfulblogflatform.security.CustomUserDetails;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api")
@@ -51,6 +54,58 @@ public class AuthController {
     }
 
     /**
+     * 사용자 로그아웃을 처리하는 컨트롤러 메서드.
+     * JWT 토큰을 무효화하고 로그아웃 처리를 수행합니다.
+     *
+     * @param token Authorization 헤더에서 전달받은 JWT 토큰 (Bearer 토큰)
+     * @return ResponseEntity<ErrorResponse<String>> 로그아웃 처리 결과를 포함한 응답
+     * @throws JwtException 토큰 처리 중 발생하는 예외:
+     *         - TOKEN_MISSING: 토큰이 제공되지 않은 경우
+     *         - INVALID_TOKEN_FORMAT: 잘못된 토큰 형식
+     *         - TOKEN_INVALIDATION_ERROR: 토큰 무효화 처리 실패
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<ErrorResponse<String>> logout(
+            @RequestHeader(value = "Authorization", required = false) String token) {
+
+        // 1. 토큰 존재 여부 검증
+        if (token == null) {
+            // 토큰이 제공되지 않은 경우 예외 발생
+            throw new JwtException(JwtErrorCode.TOKEN_MISSING);
+        }
+
+        // 2. Bearer 토큰 형식 검증
+        if (!token.startsWith("Bearer ")) {
+            // Bearer 형식이 아닌 경우 예외 발생
+            throw new JwtException(JwtErrorCode.INVALID_TOKEN_FORMAT);
+        }
+
+        try {
+            // 3. Bearer 접두사 제거하여 실제 JWT 토큰 추출
+            String jwt = token.substring(7);
+
+            // 4. JWT 토큰 무효화 처리
+            jwtUtil.invalidateToken(jwt);
+
+            // 5. 로그아웃 성공 응답 생성
+            ErrorResponse<String> response = ErrorResponse.<String>builder()
+                    .status(HttpStatus.OK)                // HTTP 상태 코드 설정
+                    .message("로그아웃 성공")              // 성공 메시지
+                    .data(null)                          // 추가 데이터 없음
+                    .timestamp(LocalDateTime.now())      // 현재 시간
+                    .build();
+
+            // 6. 성공 응답 반환
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            // 7. 토큰 무효화 처리 중 발생한 예외 처리
+            // 예외 발생 시 TOKEN_INVALIDATION_ERROR로 래핑하여 throw
+            throw new JwtException(JwtErrorCode.TOKEN_INVALIDATION_ERROR);
+        }
+    }
+
+    /**
      * 로그인 요청 데이터를 담는 내부 클래스.
      * 클라이언트에서 전달받은 사용자명(username)과 비밀번호(password)를 포함합니다.
      */
@@ -85,5 +140,15 @@ public class AuthController {
             this.username = username;
             this.userId = userId;
         }
+    }
+
+    /**
+     * API 응답에 사용되는 메시지 래퍼 클래스
+     * 클라이언트에게 전달할 메시지를 포함합니다.
+     */
+    @Getter
+    @AllArgsConstructor
+    static class MessageResponse {
+        private String message; // 응답 메시지 내용
     }
 }
