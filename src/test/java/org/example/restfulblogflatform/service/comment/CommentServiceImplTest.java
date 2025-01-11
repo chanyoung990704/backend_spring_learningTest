@@ -9,6 +9,7 @@ import org.example.restfulblogflatform.exception.business.PostException;
 import org.example.restfulblogflatform.repository.CommentRepository;
 import org.example.restfulblogflatform.service.post.PostService;
 import org.example.restfulblogflatform.service.user.UserService;
+import org.example.restfulblogflatform.service.validator.CommentValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -157,13 +158,13 @@ class CommentServiceImplTest {
         Post mockPost = mock(Post.class);
 
         given(mockComment.getPost()).willReturn(mockPost);
-        given(commentValidator.getCommentOrThrow(commentId)).willReturn(mockComment);
+        given(commentValidator.getOrThrow(commentId)).willReturn(mockComment);
 
         // when
         commentService.delete(commentId);
 
         // then
-        verify(commentValidator).getCommentOrThrow(commentId);
+        verify(commentValidator).getOrThrow(commentId);
         verify(mockPost).removeComment(mockComment);
     }
 }

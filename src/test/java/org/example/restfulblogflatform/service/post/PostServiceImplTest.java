@@ -9,6 +9,7 @@ import org.example.restfulblogflatform.exception.business.PostException;
 import org.example.restfulblogflatform.exception.business.UserException;
 import org.example.restfulblogflatform.repository.PostRepository;
 import org.example.restfulblogflatform.service.user.UserService;
+import org.example.restfulblogflatform.service.validator.PostValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,7 +84,7 @@ class PostServiceImplTest {
         Post mockPost = Post.createPost(mockUser, "Test Title", "Test Content");
 
         // Mock 동작 정의
-        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+        given(postValidator.getOrThrow(postId)).willReturn(mockPost);
 
         // when
         Post result = postService.get(postId);
@@ -91,7 +92,7 @@ class PostServiceImplTest {
         // then
         assertNotNull(result);
         assertEquals("Test Title", result.getTitle());
-        verify(postValidator).getPostOrThrow(postId);
+        verify(postValidator).getOrThrow(postId);
     }
 
     /**
@@ -106,14 +107,14 @@ class PostServiceImplTest {
         Post mockPost = mock(Post.class);
 
         // Mock 동작 정의
-        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+        given(postValidator.getOrThrow(postId)).willReturn(mockPost);
         given(mockPost.getUser()).willReturn(mockUser);
 
         // when
         postService.delete(postId);
 
         // then
-        verify(postValidator).getPostOrThrow(postId);
+        verify(postValidator).getOrThrow(postId);
         verify(mockPost).getUser();
         verify(mockUser).removePost(mockPost);
     }
@@ -161,7 +162,7 @@ class PostServiceImplTest {
         Post mockPost = Post.createPost(mockUser, "Original Title", "Original Content");
 
         // Mock 동작 정의
-        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+        given(postValidator.getOrThrow(postId)).willReturn(mockPost);
 
         // when
         PostResponseDto response = postService.update(postId, updatedTitle, updatedContent);
@@ -170,7 +171,7 @@ class PostServiceImplTest {
         assertNotNull(response);
         assertEquals(updatedTitle, response.getTitle());
         assertEquals(updatedContent, response.getContent());
-        verify(postValidator).getPostOrThrow(postId);
+        verify(postValidator).getOrThrow(postId);
     }
 
     /**
@@ -201,12 +202,12 @@ class PostServiceImplTest {
     void getPostFailDueToPostNotFound(){
         // given
         Long postId = 1L;
-        given(postValidator.getPostOrThrow(postId)).willThrow(new PostException(ErrorCode.POST_NOT_FOUND));
+        given(postValidator.getOrThrow(postId)).willThrow(new PostException(ErrorCode.POST_NOT_FOUND));
         // when & then
         assertThrows(PostException.class, () -> {
             postService.getResponseDto(postId);
         });
-        verify(postValidator).getPostOrThrow(postId);
+        verify(postValidator).getOrThrow(postId);
     }
     /**
      * 게시글 단일 조회 성공 테스트 - 조회수 증가 확인
@@ -219,7 +220,7 @@ class PostServiceImplTest {
         User mockUser = User.createUser("testUser", "password", "test@example.com");
         Post mockPost = Post.createPost(mockUser, "Test Title", "Test Content"); // Mock 게시글 객체 생성
         // Mock 동작 정의: postRepository에서 해당 ID의 게시글 반환
-        given(postValidator.getPostOrThrow(postId)).willReturn(mockPost);
+        given(postValidator.getOrThrow(postId)).willReturn(mockPost);
         // when
         PostResponseDto responseDto = postService.getResponseDto(postId);
         // then
@@ -227,7 +228,7 @@ class PostServiceImplTest {
         assertEquals(mockPost.getTitle(), responseDto.getTitle()); // 제목 확인
         assertEquals(mockPost.getContent(), responseDto.getContent()); // 내용 확인
         assertEquals(1, mockPost.getViewCount()); // 조회수가 1 증가했는지 확인
-        verify(postValidator).getPostOrThrow(postId); // findById 호출 확인
+        verify(postValidator).getOrThrow(postId); // findById 호출 확인
     }
 }
 

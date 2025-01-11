@@ -7,6 +7,7 @@ import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.repository.PostRepository;
 import org.example.restfulblogflatform.service.user.UserService;
+import org.example.restfulblogflatform.service.validator.PostValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -55,7 +56,7 @@ public class PostServiceImpl implements PostService {
      */
     @Override
     public Post get(Long postId) {
-        return postValidator.getPostOrThrow(postId); // 게시글 검증 후 반환
+        return postValidator.getOrThrow(postId); // 게시글 검증 후 반환
     }
 
     /**
@@ -70,7 +71,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     public PostResponseDto getResponseDto(Long postId) {
         // 게시글을 데이터베이스에서 가져옴( validator 사용)
-        Post post = postValidator.getPostOrThrow(postId);
+        Post post = postValidator.getOrThrow(postId);
         // 조회수 증가
         post.incrementViewCount();
         // 엔티티를 DTO로 변환하여 반환
@@ -106,7 +107,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
     public PostResponseDto update(Long postId, String title, String content) {
-        Post post = postValidator.getPostOrThrow(postId); // 게시글 가져오기 및 검증
+        Post post = postValidator.getOrThrow(postId); // 게시글 가져오기 및 검증
         post.update(title, content); // 제목과 내용 업데이트
         return PostResponseDto.of(post); // DTO로 반환
     }
@@ -122,7 +123,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
     public void delete(Long postId) {
-        Post post = postValidator.getPostOrThrow(postId); // 게시글 가져오기 및 검증
+        Post post = postValidator.getOrThrow(postId); // 게시글 가져오기 및 검증
         post.getUser().removePost(post); // 사용자-게시글 연관 관계 해제
     }
 }

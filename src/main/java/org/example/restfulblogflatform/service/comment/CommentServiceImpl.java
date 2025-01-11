@@ -8,6 +8,7 @@ import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.repository.CommentRepository;
 import org.example.restfulblogflatform.service.post.PostService;
 import org.example.restfulblogflatform.service.user.UserService;
+import org.example.restfulblogflatform.service.validator.CommentValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -67,7 +68,7 @@ public class CommentServiceImpl implements CommentService {
      */
     @Override
     public Comment get(Long commentId) {
-        return commentValidator.getCommentOrThrow(commentId); // 검증 후 댓글 반환
+        return commentValidator.getOrThrow(commentId); // 검증 후 댓글 반환
     }
 
     /**
@@ -99,7 +100,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
     public CommentResponseDto update(Long commentId, Long userId, String content) {
-        Comment comment = commentValidator.getCommentOrThrow(commentId); // 댓글 검증
+        Comment comment = commentValidator.getOrThrow(commentId); // 댓글 검증
 
         comment.updateContent(content); // 댓글 내용 수정
 
@@ -117,7 +118,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
     public void delete(Long commentId) {
-        Comment comment = commentValidator.getCommentOrThrow(commentId); // 댓글 검증
+        Comment comment = commentValidator.getOrThrow(commentId); // 댓글 검증
 
         comment.getPost().removeComment(comment); // 게시글에서 댓글 제거 (연관 관계 해제)
     }

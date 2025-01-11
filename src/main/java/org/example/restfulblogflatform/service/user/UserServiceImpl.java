@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.dto.user.request.UserSignUpRequestDto;
 import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.repository.UserRepository;
+import org.example.restfulblogflatform.service.validator.UserValidator;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,7 +59,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User get(Long userId) {
         // Validator를 통해 존재 여부 검증 및 사용자 반환 (예외 처리 포함)
-        return validator.getUserOrThrow(userId);
+        return validator.getOrThrow(userId);
     }
 
     /**
@@ -81,7 +82,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(Long userId) {
         // 삭제 전 사용자 존재 여부 검증 (예외 발생 가능)
-        validator.validateUserExists(userId);
+        validator.validateExists(userId);
 
         // 사용자 데이터베이스에서 삭제 수행
         userRepository.deleteById(userId);

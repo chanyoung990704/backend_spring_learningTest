@@ -5,6 +5,7 @@ import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.exception.ErrorCode;
 import org.example.restfulblogflatform.exception.business.UserException;
 import org.example.restfulblogflatform.repository.UserRepository;
+import org.example.restfulblogflatform.service.validator.UserValidator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -163,13 +164,13 @@ class UserServiceTest {
         // given: 삭제할 사용자 ID 설정 및 Mock 동작 정의
         Long userId = 1L;
 
-        doNothing().when(validator).validateUserExists(userId);
+        doNothing().when(validator).validateExists(userId);
 
         // when: 서비스 호출 (삭제)
         userService.delete(userId);
 
         // then: 검증 (삭제 로직이 정상적으로 호출되었는지 확인)
-        verify(validator).validateUserExists(userId);
+        verify(validator).validateExists(userId);
         verify(userRepository).deleteById(userId);
     }
 
@@ -182,13 +183,13 @@ class UserServiceTest {
         // given: 존재하지 않는 사용자 ID 설정 및 Mock 동작 정의 (예외 발생)
         Long nonExistentUserId = 999L;
         doThrow(new UserException(ErrorCode.USER_NOT_FOUND))
-                .when(validator).validateUserExists(nonExistentUserId);
+                .when(validator).validateExists(nonExistentUserId);
 
         // when & then: 예외 발생 여부 확인 및 검증
         UserException exception = assertThrows(UserException.class, () -> userService.delete(nonExistentUserId));
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
 
-        verify(validator).validateUserExists(nonExistentUserId);
+        verify(validator).validateExists(nonExistentUserId);
         verify(userRepository, never()).deleteById(anyLong());
     }
 
