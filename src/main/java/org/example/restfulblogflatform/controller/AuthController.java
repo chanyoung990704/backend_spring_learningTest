@@ -37,9 +37,6 @@ public class AuthController {
         Authentication auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
 
-        // 인증 정보를 SecurityContext에 저장 (Spring Security에서 관리)
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
         // JWT 토큰 생성
         String token = jwtUtil.generateToken(authRequest.getUsername());
 
