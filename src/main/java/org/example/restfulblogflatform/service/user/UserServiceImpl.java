@@ -3,8 +3,10 @@ package org.example.restfulblogflatform.service.user;
 import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.dto.user.request.UserSignUpRequestDto;
 import org.example.restfulblogflatform.entity.User;
+import org.example.restfulblogflatform.event.signup.SignUpEmailEvent;
 import org.example.restfulblogflatform.repository.UserRepository;
 import org.example.restfulblogflatform.service.validator.UserValidator;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository; // 사용자 데이터베이스 접근 객체
     private final PasswordEncoder passwordEncoder; // 비밀번호 암호화 도구
     private final UserValidator validator; // 사용자 검증 로직을 처리하는 Validator
+    private final ApplicationEventPublisher eventPublisher; // 애플리케이션 이벤트 발행 도구
 
     /**
      * 새로운 사용자를 생성합니다.
@@ -47,7 +50,14 @@ public class UserServiceImpl implements UserService {
         );
 
         // 사용자 저장 후 ID 반환
-        return userRepository.save(user).getId();
+        Long id = userRepository.save(user).getId();
+
+        // 회원가입 성공 시 이메일 알림 이벤트 발행
+        eventPublisher.publishEvent(
+                new SignUpEmailEvent(user.getEmail(), user.getUsername())
+        );
+
+        return id;
     }
 
     /**
@@ -88,3 +98,4 @@ public class UserServiceImpl implements UserService {
         userRepository.deleteById(userId);
     }
 }
+
