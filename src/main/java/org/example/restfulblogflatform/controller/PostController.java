@@ -10,6 +10,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.PagedResourcesAssembler;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 public class PostController {
 
     private final PostService postService; // 게시글 관련 비즈니스 로직을 처리하는 서비스
+    private final PagedResourcesAssembler<PostResponseDto> pagedResourcesAssembler;
 
     /**
      * 게시글 생성 API
@@ -68,12 +72,15 @@ public class PostController {
      * @param pageable 페이징 요청 정보 (페이지 번호, 크기, 정렬 조건 등)
      * @return ResponseEntity<Page<PostResponseDto>> - 페이징 처리된 게시글 정보를 포함한 응답 (HTTP 200 OK)
      */
-    @GetMapping // GET 요청으로 모든 게시글 조회
-    public ResponseEntity<Page<PostResponseDto>> getAllPosts(
-            @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable) {
+    @GetMapping
+    public ResponseEntity<PagedModel<EntityModel<PostResponseDto>>> getAllPosts(
+            @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC)
+            Pageable pageable) {
 
-        // HTTP 200 응답 반환
-        return ResponseEntity.ok(postService.getAll(pageable));
+        Page<PostResponseDto> posts = postService.getAll(pageable);
+        PagedModel<EntityModel<PostResponseDto>> pagedModel = pagedResourcesAssembler.toModel(posts);
+
+        return ResponseEntity.ok(pagedModel);
     }
 
     /**
