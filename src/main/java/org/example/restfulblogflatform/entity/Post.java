@@ -40,6 +40,9 @@ public class Post extends BaseEntity { // BaseEntity를 상속받아 생성/수�
     @Version // 낙관적 락 버전 관리 필드
     private int viewCount = 0; // 게시글 조회수 (기본값 0)
 
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FileAttachment> attachments = new ArrayList<>(); // 파일 첨부 목록 추가
+
     /**
      * 게시글(Post) 객체를 생성하는 정적 팩토리 메서드.
      * 양방향 연관관계를 설정하고, 게시글 객체를 생성합니다.
@@ -55,6 +58,7 @@ public class Post extends BaseEntity { // BaseEntity를 상속받아 생성/수�
         post.content = content; // 내용 설정
         post.viewCount = 0; // 초기 조회수 설정
         post.comments = new ArrayList<>(); // 빈 댓글 리스트 초기화
+        post.attachments = new ArrayList<>(); // 파일 첨부 리스트 초기화
         post.setUser(user); // 작성자 설정 및 연관관계 설정
         user.addPost(post); // 작성자(User)에 게시글 추가 (양방향 연관관계 설정)
         return post; // 생성된 Post 객체 반환
@@ -114,5 +118,25 @@ public class Post extends BaseEntity { // BaseEntity를 상속받아 생성/수�
      */
     public void incrementViewCount() {
         this.viewCount++;
+    }
+
+    /**
+     * 파일 첨부를 추가하는 메서드
+     */
+    public void addAttachment(FileAttachment attachment) {
+        this.attachments.add(attachment);
+        if (attachment.getPost() != this) {
+            attachment.setPost(this);
+        }
+    }
+
+    /**
+     * 파일 첨부를 제거하는 메서드
+     */
+    public void removeAttachment(FileAttachment attachment) {
+        this.attachments.remove(attachment);
+        if (attachment.getPost() == this) {
+            attachment.setPost(null);
+        }
     }
 }

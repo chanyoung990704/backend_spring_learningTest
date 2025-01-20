@@ -65,7 +65,7 @@ class IntegrationTest {
         assertEquals("testUser@example.com", user.getEmail());
 
         // 게시글 생성
-        PostRequestDto postRequestDto = new PostRequestDto("Test Post Title", "Test Post Content");
+        PostRequestDto postRequestDto = new PostRequestDto("Test Post Title", "Test Post Content", null);
         PostResponseDto postResponseDto = postService.add(postRequestDto, userId);
         assertNotNull(postResponseDto);
         assertEquals("Test Post Title", postResponseDto.getTitle());

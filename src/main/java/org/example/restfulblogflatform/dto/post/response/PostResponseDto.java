@@ -2,42 +2,79 @@ package org.example.restfulblogflatform.dto.post.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.example.restfulblogflatform.entity.FileAttachment;
 import org.example.restfulblogflatform.entity.Post;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 게시글 응답 데이터를 담는 DTO(Data Transfer Object).
- * 클라이언트에게 게시글 정보를 반환할 때 사용됩니다.
+ * 클라이언트에게 게시글 정보와 첨부 파일 정보를 반환할 때 사용됩니다.
  */
-@Getter // Lombok 어노테이션: 각 필드에 대한 Getter 메서드를 자동 생성
-@AllArgsConstructor(staticName = "of") // Lombok 어노테이션: 모든 필드를 포함하는 생성자를 생성하며, static 팩토리 메서드("of")도 제공
+@Getter
+@AllArgsConstructor(staticName = "of")
 public class PostResponseDto {
 
-    private Long id; // 게시글 ID
-    private String title; // 게시글 제목
-    private String content; // 게시글 내용
-    private String username; // 작성자 이름
-    private Long userId; // 작성자 ID
-    private LocalDateTime createdAt; // 게시글 생성 시간
-    private int viewCount; // 게시글 조회수
+    private Long id;
+    private String title;
+    private String content;
+    private String username;
+    private Long userId;
+    private LocalDateTime createdAt;
+    private int viewCount;
+    private List<FileAttachmentDto> attachments; // 첨부 파일 목록
+
+    /**
+     * 첨부 파일 정보를 담는 내부 클래스
+     */
+    @Getter
+    @AllArgsConstructor
+    public static class FileAttachmentDto {
+        private Long id;
+        private String originalFileName;
+        private String storedFileName;
+        private Long fileSize;
+        private String fileType;
+
+        // 필요한 경우, 파일 접근 경로(또는 URL)를 응답에 포함할 수 있습니다.
+        private String filePath;
+
+        public static FileAttachmentDto from(FileAttachment attachment) {
+            return new FileAttachmentDto(
+                    attachment.getId(),
+                    attachment.getOriginalFileName(),
+                    attachment.getStoredFileName(),
+                    attachment.getFileSize(),
+                    attachment.getFileType(),
+                    attachment.getFilePath() // filePath 추가
+            );
+        }
+    }
 
     /**
      * Post 엔티티를 PostResponse DTO로 변환하는 정적 팩토리 메서드.
      *
      * @param post Post 엔티티 객체
-     * @return PostResponse - 변환된 응답 객체
+     * @return PostResponseDto - 변환된 응답 객체
      */
     public static PostResponseDto of(Post post) {
+        List<FileAttachmentDto> attachmentDtos = post.getAttachments().stream()
+                .map(FileAttachmentDto::from)
+                .collect(Collectors.toList());
+
         return new PostResponseDto(
-                post.getId(), // 게시글 ID
-                post.getTitle(), // 게시글 제목
-                post.getContent(), // 게시글 내용
-                post.getUser().getUsername(), // 작성자 이름 (User 엔티티에서 가져옴)
-                post.getUser().getId(), // 작성자 ID (User 엔티티에서 가져옴)
-                post.getCreatedDate(), // 생성 시간
-                post.getViewCount() // 게시글 조회수
+                post.getId(),
+                post.getTitle(),
+                post.getContent(),
+                post.getUser().getUsername(),
+                post.getUser().getId(),
+                post.getCreatedDate(),
+                post.getViewCount(),
+                attachmentDtos
         );
     }
 }
+
 

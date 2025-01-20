@@ -3,15 +3,21 @@ package org.example.restfulblogflatform.service.post;
 import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.dto.post.request.PostRequestDto;
 import org.example.restfulblogflatform.dto.post.response.PostResponseDto;
+import org.example.restfulblogflatform.entity.FileAttachment;
 import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.repository.PostRepository;
+import org.example.restfulblogflatform.service.file.FileStorageService;
 import org.example.restfulblogflatform.service.user.UserService;
 import org.example.restfulblogflatform.service.validator.PostValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
 
 /**
  * 게시글(Post) 관련 비즈니스 로직을 처리하는 서비스 구현체.
@@ -21,110 +27,113 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @Transactional(readOnly = true) // 기본적으로 읽기 전용 트랜잭션 설정
-@RequiredArgsConstructor // Lombok을 사용하여 final 필드의 생성자를 자동 생성
+@RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
 
-    private final PostRepository postRepository; // 게시글 데이터 처리 JPA Repository
-    private final UserService userService; // 사용자 관련 비즈니스 로직 처리
-    private final PostValidator postValidator; // 게시글 검증 로직 처리 클래스
+    private final PostRepository postRepository;
+    private final UserService userService;
+    private final PostValidator postValidator;
+    private final FileStorageService fileStorageService;      // 파일 저장소(로컬/클라우드) 관련 서비스
 
     /**
-     * 게시글 생성
-     *
-     * 사용자가 새로운 게시글을 작성합니다. 사용자 정보를 확인한 뒤, 제목과 내용을 기반으로
-     * 게시글을 저장하고, 저장된 게시글 정보를 DTO로 반환합니다.
-     *
-     * @param postRequestDto 게시글 생성 요청 DTO (제목과 내용 포함)
-     * @param userId         게시글 작성자의 사용자 ID
-     * @return 생성된 게시글의 정보를 담은 응답 DTO
+     * 게시글 생성 (파일 업로드 처리 포함)
      */
     @Override
-    @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
+    @Transactional
     public PostResponseDto add(PostRequestDto postRequestDto, Long userId) {
-        User user = userService.get(userId); // 사용자 정보 가져오기
-        Post post = Post.createPost(user, postRequestDto.getTitle(), postRequestDto.getContent()); // 게시글 생성
-        return PostResponseDto.of(postRepository.save(post)); // 저장 후 DTO로 반환
+        // 1) 작성자 가져오기
+        User user = userService.get(userId);
+        // 2) Post 엔티티 생성
+        Post post = Post.createPost(user, postRequestDto.getTitle(), postRequestDto.getContent());
+        // 3) 파일 업로드 처리
+        if (postRequestDto.getFiles() != null && !postRequestDto.getFiles().isEmpty()) {
+            handleFileUploads(postRequestDto.getFiles(), post);
+        }
+        // 4) DB 저장 후, DTO 변환
+        return PostResponseDto.of(postRepository.save(post));
     }
 
     /**
-     * 게시글 단일 조회
-     *
-     * 특정 ID를 가진 게시글을 조회합니다. 게시글이 존재하지 않으면 예외를 발생시킵니다.
-     *
-     * @param postId 조회할 게시글의 ID
-     * @return 조회된 게시글 엔티티
+     * 게시글 단일 조회 (엔티티)
      */
     @Override
     public Post get(Long postId) {
-        return postValidator.getOrThrow(postId); // 게시글 검증 후 반환
+        return postValidator.getOrThrow(postId);
     }
 
     /**
-     * 게시글 단일 조회 (응답 DTO 형태)
-     *
-     * 특정 ID를 가진 게시글을 조회하고, 조회수를 증가시킨 후 해당 데이터를 응답 DTO 형태로 반환합니다.
-     *
-     * @param postId 조회할 게시글의 ID
-     * @return 조회된 게시글 정보를 담은 응답 DTO
+     * 게시글 단일 조회 (응답 DTO + 조회수 증가)
      */
     @Override
     @Transactional
     public PostResponseDto getResponseDto(Long postId) {
-        // 게시글을 데이터베이스에서 가져옴( validator 사용)
         Post post = postValidator.getOrThrow(postId);
-        // 조회수 증가
         post.incrementViewCount();
-        // 엔티티를 DTO로 변환하여 반환
         return PostResponseDto.of(post);
     }
 
     /**
-     * 모든 게시글 조회 (페이징 처리)
-     *
-     * 모든 게시글 데이터를 페이징 처리하여 조회합니다. 클라이언트가 페이징 조건(페이지 크기, 정렬 등)을 지정할 수 있으며,
-     * 페이징 메타데이터와 게시글 리스트를 응답합니다.
-     *
-     * @param pageable 페이징 요청 정보 (페이지 번호, 크기, 정렬 조건 등)
-     * @return 페이징 처리된 게시글 리스트 (DTO 형태)
+     * 모든 게시글 조회 (페이징, DTO 변환)
      */
     @Override
     public Page<PostResponseDto> getAll(Pageable pageable) {
         Page<Post> posts = postRepository.findAll(pageable);
-        return posts.map(PostResponseDto::of); // Post -> PostResponseDto 변환
+        return posts.map(PostResponseDto::of);
     }
 
     /**
      * 게시글 수정
-     *
-     * 특정 게시글의 제목과 내용을 수정합니다. 수정하려는 게시글이 존재하지 않으면 예외를 발생시킵니다.
-     * 제목과 내용을 업데이트한 후 업데이트된 게시글 정보를 DTO로 반환합니다.
-     *
-     * @param postId  수정할 게시글의 ID
-     * @param title   새로운 제목
-     * @param content 새로운 내용
-     * @return 수정된 게시글 정보를 담은 응답 DTO
      */
     @Override
-    @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
+    @Transactional
     public PostResponseDto update(Long postId, String title, String content) {
-        Post post = postValidator.getOrThrow(postId); // 게시글 가져오기 및 검증
-        post.update(title, content); // 제목과 내용 업데이트
-        return PostResponseDto.of(post); // DTO로 반환
+        Post post = postValidator.getOrThrow(postId);
+        post.update(title, content);
+        return PostResponseDto.of(post);
     }
 
     /**
      * 게시글 삭제
-     *
-     * 특정 게시글을 삭제합니다. 삭제하려는 게시글이 존재하지 않거나 삭제 조건을 만족하지 않으면 예외를 발생시킵니다.
-     * 삭제 처리 시 연관 관계를 해제합니다.
-     *
-     * @param postId 삭제할 게시글의 ID
      */
     @Override
-    @Transactional // 쓰기 작업이므로 읽기 전용 트랜잭션 해제
+    @Transactional
     public void delete(Long postId) {
-        Post post = postValidator.getOrThrow(postId); // 게시글 가져오기 및 검증
-        post.getUser().removePost(post); // 사용자-게시글 연관 관계 해제
+        Post post = postValidator.getOrThrow(postId);
+        post.getUser().removePost(post); // 연관관계 해제
+        // 실제로는 postRepository.delete(post) 등을 통해 DB에서 제거
+        // 필요한 경우, 첨부파일도 함께 제거(물리 파일 삭제) 로직을 구현해야 합니다.
+    }
+
+    /**
+     * 파일 업로드 처리
+     */
+    protected void handleFileUploads(List<MultipartFile> files, Post post) {
+        files.forEach(file -> {
+            try {
+                // 1) 원본 파일명
+                String originalFileName = file.getOriginalFilename();
+                // 2) 실제 저장 파일명 (UUID 등으로 구분)
+                String storedFileName = fileStorageService.storeFile(file);
+                // 3) 저장 위치(혹은 접근 가능한 URL) 조회
+                String filePath = fileStorageService.getFilePath(storedFileName);
+
+                // 4) FileAttachment 엔티티 생성
+                FileAttachment attachment = FileAttachment.createFileAttachment(
+                        originalFileName,
+                        storedFileName,
+                        filePath,
+                        file.getSize(),
+                        file.getContentType(),
+                        post
+                );
+
+                // 5) Post 엔티티에 첨부파일 추가 (양방향 연관관계)
+                post.addAttachment(attachment);
+
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
 

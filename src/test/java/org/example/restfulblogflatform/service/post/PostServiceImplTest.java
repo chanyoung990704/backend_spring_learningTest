@@ -2,12 +2,14 @@ package org.example.restfulblogflatform.service.post;
 
 import org.example.restfulblogflatform.dto.post.request.PostRequestDto;
 import org.example.restfulblogflatform.dto.post.response.PostResponseDto;
+import org.example.restfulblogflatform.entity.FileAttachment;
 import org.example.restfulblogflatform.entity.Post;
 import org.example.restfulblogflatform.entity.User;
 import org.example.restfulblogflatform.exception.ErrorCode;
 import org.example.restfulblogflatform.exception.business.PostException;
 import org.example.restfulblogflatform.exception.business.UserException;
 import org.example.restfulblogflatform.repository.PostRepository;
+import org.example.restfulblogflatform.service.file.FileStorageService;
 import org.example.restfulblogflatform.service.user.UserService;
 import org.example.restfulblogflatform.service.validator.PostValidator;
 import org.junit.jupiter.api.DisplayName;
@@ -20,7 +22,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,6 +48,9 @@ class PostServiceImplTest {
     @InjectMocks
     private PostServiceImpl postService; // 테스트 대상 서비스 구현체
 
+    @Mock
+    private FileStorageService fileStorageService;
+
     /**
      * 게시글 생성 성공 테스트
      */
@@ -52,7 +59,7 @@ class PostServiceImplTest {
     void addSuccess() {
         // given
         Long userId = 1L;
-        PostRequestDto postRequestDto = new PostRequestDto("Test Title", "Test Content");
+        PostRequestDto postRequestDto = new PostRequestDto("Test Title", "Test Content", null);
         User mockUser = User.createUser("testUser", "password", "test@example.com");
         Post mockPost = Post.createPost(mockUser, postRequestDto.getTitle(), postRequestDto.getContent());
 
@@ -182,7 +189,7 @@ class PostServiceImplTest {
     void addFailDueToUserNotFound() {
         // given
         Long userId = 1L;
-        PostRequestDto postRequestDto = new PostRequestDto("Test Title", "Test Content");
+        PostRequestDto postRequestDto = new PostRequestDto("Test Title", "Test Content", null);
 
         // Mock 동작 정의
         given(userService.get(userId)).willThrow(new UserException(ErrorCode.USER_NOT_FOUND));
@@ -230,5 +237,27 @@ class PostServiceImplTest {
         assertEquals(1, mockPost.getViewCount()); // 조회수가 1 증가했는지 확인
         verify(postValidator).getOrThrow(postId); // findById 호출 확인
     }
+    @Test
+    @DisplayName("파일 업로드 성공 테스트")
+    void handleFileUploadsSuccess() throws IOException {
+        // given
+        MultipartFile mockFile = mock(MultipartFile.class);
+        given(mockFile.getOriginalFilename()).willReturn("test.txt");
+        given(mockFile.getSize()).willReturn(1024L);
+        given(fileStorageService.storeFile(mockFile)).willReturn("stored-test.txt");
+        given(fileStorageService.getFilePath("stored-test.txt")).willReturn("/files/stored-test.txt");
+
+        Post mockPost = mock(Post.class);
+
+        // when
+        postService.handleFileUploads(List.of(mockFile), mockPost);
+
+        // then
+        verify(fileStorageService).storeFile(mockFile);
+        verify(fileStorageService).getFilePath("stored-test.txt");
+        verify(mockPost).addAttachment(any(FileAttachment.class));
+    }
+
+
 }
 
