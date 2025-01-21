@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.restfulblogflatform.exception.business.CommentException;
 import org.example.restfulblogflatform.exception.business.PostException;
+import org.example.restfulblogflatform.exception.file.FileStorageException;
 import org.example.restfulblogflatform.exception.jwt.JwtException;
 import org.example.restfulblogflatform.exception.response.ErrorResponse;
 import org.example.restfulblogflatform.exception.business.UserException;
@@ -28,9 +29,9 @@ import java.util.List;
  * 전역 예외를 처리하기 위한 컨트롤러 어드바이스 클래스.
  * 애플리케이션에서 발생하는 다양한 예외를 처리하고, 적절한 HTTP 응답을 반환합니다.
  */
-@RestControllerAdvice // 모든 컨트롤러에서 발생하는 예외를 처리하기 위한 어드바이스 클래스
-@Slf4j // Lombok 어노테이션: 로깅 기능 제공
-@RequiredArgsConstructor // final 필드에 대해 생성자를 자동으로 생성
+@RestControllerAdvice
+@Slf4j // 로깅을 위한 Lombok 어노테이션
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
     private final LogService logService; // 로그를 저장하는 서비스
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse<List<ValidationError>>> handleMethodArgumentNotValidException(
             MethodArgumentNotValidException ex) {
 
-        String errorMessage = String.format("입력값 유효 검증 실패 %s", ex.getMessage());
+        String errorMessage = String.format("Validation failed: %s", ex.getMessage());
         saveLog(ex, errorMessage);
 
         List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
@@ -79,7 +80,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse<List<ValidationError>> errorResponse = ErrorResponse.<List<ValidationError>>builder()
                 .status(HttpStatus.BAD_REQUEST)
-                .message("입력값 검증에 실패했습니다")
+                .message("입력값 검증에 실패했습니다.")
                 .data(validationErrors)
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -100,7 +101,8 @@ public class GlobalExceptionHandler {
 
         ErrorResponse<Object> errorResponse = ErrorResponse.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .message(ex.getMessage())
+                .message("데이터베이스 작업 중 오류가 발생했습니다.")
+                .data(null)
                 .timestamp(LocalDateTime.now())
                 .build();
 
@@ -171,7 +173,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * JWT 관련 예외 처리
+     * JWT 관련 예외 처리.
      *
      * @param ex JwtException 객체
      * @return HTTP 401 Unauthorized 응답
@@ -192,6 +194,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 파일 저장소(File Storage) 관련 예외 처리.
+     *
+     * @param ex FileStorageException 객체
+     * @return HTTP 400 Bad Request 응답
+     */
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ErrorResponse> handleFileStorageException(FileStorageException ex) {
+        String errorMessage = String.format("File storage error: %s", ex.getMessage());
+        saveLog(ex, errorMessage);
+
+        ErrorResponse<Object> errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(ex.getErrorCode().getMessage()) // 에러 코드에 정의된 사용자 친화적인 메시지 반환
+                .data(null)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    /**
      * 공통 로그 저장 메서드.
      *
      * @param ex 발생한 예외 객체
@@ -199,7 +222,7 @@ public class GlobalExceptionHandler {
      */
     private void saveLog(Exception ex, String errorMessage) {
         log.error(errorMessage); // 에러 메시지를 로그로 출력
-        logService.saveLog("ERROR", errorMessage, ex.getMessage()); // 로그 서비스에 에러 저장
+        logService.saveLog("ERROR", errorMessage, ex.getLocalizedMessage()); // 로그 서비스에 에러 저장
     }
 
     /**
@@ -207,7 +230,7 @@ public class GlobalExceptionHandler {
      */
     @Getter // Lombok 어노테이션: 각 필드에 대한 Getter 메서드를 자동 생성
     @AllArgsConstructor(access = AccessLevel.PRIVATE) // 모든 필드를 포함하는 생성자를 생성하며, 접근 수준을 PRIVATE로 제한
-    private class ValidationError {
+    private static class ValidationError {
         private final String field; // 오류가 발생한 필드 이름
         private final Object rejectedValue; // 거부된 값
         private final String message; // 오류 메시지

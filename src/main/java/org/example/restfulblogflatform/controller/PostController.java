@@ -20,10 +20,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * 게시글(Post) 관련 요청을 처리하는 REST 컨트롤러.
+ * 게시글(Post) 관련 요청을 처리하는 REST 컨트롤러
  *
- * 이 컨트롤러는 게시글 생성, 조회, 수정, 삭제와 같은 CRUD(생성, 읽기, 갱신, 삭제) 기능을 제공합니다.
- * 클라이언트 요청을 처리하고, 적절한 응답을 반환합니다.
+ * 게시글의 CRUD 작업과 파일 첨부 기능을 제공하는 RESTful API 엔드포인트들을 정의합니다.
+ * 모든 응답은 HTTP 표준 상태 코드를 준수합니다.
  */
 @RestController
 @RequestMapping("/api/posts")
@@ -34,23 +34,56 @@ public class PostController {
     private final PagedResourcesAssembler<PostResponseDto> pagedResourcesAssembler;
 
     /**
-     * 게시글 생성 API (파일 업로드 포함)
+     * 새로운 게시글을 생성하는 엔드포인트
+     *
+     * @param request 게시글 생성 요청 데이터 (제목, 내용, 첨부파일 등)
+     * @param userDetails 인증된 사용자 정보
+     * @return 생성된 게시글 정보와 HTTP 201 Created 상태
+     *
+     * 요청 예시:
+     * POST /api/posts
+     * Content-Type: multipart/form-data
+     *
+     * - title: 게시글 제목
+     * - content: 게시글 내용
+     * - files: 첨부파일들 (선택적)
      */
     @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<PostResponseDto> createPost(
-            @ModelAttribute @Valid PostRequestDto request,  // @ModelAttribute로 변경
+            @ModelAttribute @Valid PostRequestDto request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
         PostResponseDto response = postService.add(request, userDetails.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // 기존 메서드들은 동일하게 유지
+    /**
+     * 특정 게시글을 조회하는 엔드포인트
+     *
+     * @param postId 조회할 게시글의 고유 식별자
+     * @return 조회된 게시글 정보와 HTTP 200 OK 상태
+
+     * 요청 예시:
+     * GET /api/posts/{postId}
+     */
     @GetMapping("/{postId}")
     public ResponseEntity<PostResponseDto> getPost(@PathVariable Long postId) {
         return ResponseEntity.ok(postService.getResponseDto(postId));
     }
 
+    /**
+     * 게시글 목록을 페이징하여 조회하는 엔드포인트
+     *
+     * @param pageable 페이징 정보 (페이지 번호, 크기, 정렬 기준)
+     * @return 페이징된 게시글 목록과 HTTP 200 OK 상태
+     *
+     * 기본 설정:
+     * - 페이지 크기: 10개
+     * - 정렬: 생성일 기준 내림차순
+     *
+     * 요청 예시:
+     * GET /api/posts?page=0&size=10&sort=createdDate,desc
+     */
     @GetMapping
     public ResponseEntity<PagedModel<EntityModel<PostResponseDto>>> getAllPosts(
             @PageableDefault(size = 10, sort = "createdDate", direction = Sort.Direction.DESC)
@@ -61,10 +94,21 @@ public class PostController {
         return ResponseEntity.ok(pagedModel);
     }
 
+    /**
+     * 특정 게시글을 삭제하는 엔드포인트
+     *
+     * @param postId 삭제할 게시글의 고유 식별자
+     * @return HTTP 204 No Content 상태
+     *
+     *
+     * 요청 예시:
+     * DELETE /api/posts/{postId}
+     */
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(@PathVariable Long postId) {
         postService.delete(postId);
         return ResponseEntity.noContent().build();
     }
 }
+
 
