@@ -3,6 +3,8 @@ package org.example.restfulblogflatform.config;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.restfulblogflatform.jwt.JwtRequestFilter;
+import org.example.restfulblogflatform.jwt.JwtUtil;
+import org.example.restfulblogflatform.jwt.RefreshTokenService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,6 +34,8 @@ public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter; // JWT 요청 필터
     private final UserDetailsService userDetailsService; // 사용자 정보를 로드하는 서비스
+    private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     /**
      * HTTP 보안 필터 체인 구성을 정의하는 메서드
@@ -50,8 +54,8 @@ public class SecurityConfig {
 
                 // HTTP 요청에 대한 접근 권한 설정
                 .authorizeHttpRequests(authorize -> authorize
-                        // 로그인/회원가입 엔드포인트는 모든 사용자 접근 허용
-                        .requestMatchers("/api/login", "/api/register").permitAll()
+                        // 로그인/회원가입/리프레시 엔드포인트는 모든 사용자 접근 허용
+                        .requestMatchers("/api/login", "/api/register", "/api/refresh").permitAll()
                         // 로그아웃은 인증된 사용자만 접근 가능
                         .requestMatchers("/api/logout").authenticated()
                         // POST /api/posts 엔드포인트는 인증 필요
@@ -70,6 +74,23 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         // 로그아웃 처리 URL 설정
                         .logoutUrl("/api/logout")
+                        // 토큰 무효화 및 Refresh 토큰 처리
+                        .addLogoutHandler((request, response, authentication) -> {
+                            String authHeader = request.getHeader("Authorization");
+                            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                                String accessToken = authHeader.substring(7);
+                                jwtUtil.invalidateToken(accessToken);
+                                Long userId = jwtUtil.extractUserId(accessToken);
+                                if (userId != null) {
+                                    refreshTokenService.revokeAllForUser(userId);
+                                }
+                            }
+                            String refreshHeader = request.getHeader("Refresh-Token");
+                            if (refreshHeader != null) {
+                                jwtUtil.invalidateToken(refreshHeader);
+                                refreshTokenService.revokeToken(refreshHeader);
+                            }
+                        })
                         // 로그아웃 성공 시 처리할 핸들러 설정
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpServletResponse.SC_OK);
