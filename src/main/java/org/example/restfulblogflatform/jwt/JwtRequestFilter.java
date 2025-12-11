@@ -46,7 +46,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         // "Authorization" 헤더가 존재하고 "Bearer "로 시작하는 경우 JWT 추출
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             jwt = authorizationHeader.substring(7); // "Bearer " 이후의 토큰 부분만 추출
-            username = jwtUtil.extractUsername(jwt); // JWT에서 사용자 이름(username) 추출
+            try {
+                username = jwtUtil.extractUsername(jwt); // JWT에서 사용자 이름(username) 추출
+            } catch (Exception ignored) {
+                username = null;
+            }
         }
 
         // SecurityContext에 인증 객체가 없는 경우에만 JWT 인증 수행
