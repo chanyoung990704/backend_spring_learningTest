@@ -100,7 +100,7 @@ public class PostServiceImpl implements PostService {
     public void delete(Long postId) {
         Post post = postValidator.getOrThrow(postId);
         post.getUser().removePost(post); // 연관관계 해제
-        // 실제로는 postRepository.delete(post) 등을 통해 DB에서 제거
+        postRepository.delete(post);
         // 필요한 경우, 첨부파일도 함께 제거(물리 파일 삭제) 로직을 구현해야 합니다.
     }
 
